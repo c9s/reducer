@@ -1,0 +1,13 @@
+// $Id$
+// vim:ft=javascript
+
+// If your extension references something external, use ARG_WITH
+// ARG_WITH("reducer", "for reducer support", "no");
+
+// Otherwise, use ARG_ENABLE
+// ARG_ENABLE("reducer", "enable reducer support", "no");
+
+if (PHP_REDUCER != "no") {
+	EXTENSION("reducer", "reducer.c", PHP_EXTNAME_SHARED, "/DZEND_ENABLE_STATIC_TSRMLS_CACHE=1");
+}
+
