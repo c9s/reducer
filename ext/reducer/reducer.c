@@ -7,7 +7,9 @@
 ZEND_DECLARE_MODULE_GLOBALS(reducer)
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_group_by, 0, 0, 1)
-  ZEND_ARG_INFO(0, collection)
+  ZEND_ARG_INFO(0, array)
+  ZEND_ARG_INFO(0, group_bys)
+  ZEND_ARG_INFO(0, aggregators)
 ZEND_END_ARG_INFO()
 
 static const zend_function_entry reducer_functions[] = {
@@ -70,13 +72,22 @@ PHP_MINFO_FUNCTION(reducer)
 
 PHP_FUNCTION(group_by)
 {
-    int i;
-    size_t filter_len;
-    char *filter;
-
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &filter, &filter_len) == FAILURE) {
+    zval *input_array;
+    zval *group_bys;
+    zval *aggs;
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "aaa", &input_array, &group_bys, &aggs) == FAILURE) {
       return;
     }
 
+    zend_string *key;
+    ulong num_key;
+    zval *val;
+    HashTable * ht = Z_ARRVAL_P(input_array);
+    ZEND_HASH_FOREACH_KEY_VAL(ht, num_key, key, val) {
+      if (key) {
+
+      }
+    }
+    ZEND_HASH_FOREACH_END();
     RETURN_FALSE;
 }
