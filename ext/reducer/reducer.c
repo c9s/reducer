@@ -15,7 +15,7 @@ static const zend_function_entry reducer_functions[] = {
 	PHP_FE_END
 };
 
-zend_module_entry filter_module_entry = {
+zend_module_entry reducer_module_entry = {
 	STANDARD_MODULE_HEADER,
 	"reducer",
 	reducer_functions,
