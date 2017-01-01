@@ -250,22 +250,6 @@ PHP_FUNCTION(group_by)
     ZEND_HASH_FOREACH_VAL(Z_ARRVAL(groups), group) {
       zval fold_result = fold_group(group, Z_STR_P(field), aggregators);
       add_next_index_zval(return_value, &fold_result);
-      // zval_add_ref(&fold_result);
     } ZEND_HASH_FOREACH_END();
-
-    // php_var_dump(&groups, 1);
-    // ZVAL_COPY(return_value, &groups);
     zval_dtor(&groups);
-
-    /*
-    zval *field;
-    ZEND_HASH_FOREACH_VAL(HASH_OF(fields), field) {
-      zval tmp_groups = group_items(&rows, Z_STR_P(field));
-    } ZEND_HASH_FOREACH_END();
-    */
-
-    /*
-    // zval_ptr_dtor(&groups);
-    add_next_index_zval(return_value, &groups);
-    */
 }
