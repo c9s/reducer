@@ -3,12 +3,13 @@
 #endif
 
 #include "php_reducer.h"
+#include "ext/standard/php_var.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(reducer)
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_group_by, 0, 0, 1)
   ZEND_ARG_INFO(0, array)
-  ZEND_ARG_INFO(0, group_bys)
+  ZEND_ARG_INFO(0, group_by_fields)
   ZEND_ARG_INFO(0, aggregators)
 ZEND_END_ARG_INFO()
 
@@ -70,24 +71,141 @@ PHP_MINFO_FUNCTION(reducer)
 }
 
 
-PHP_FUNCTION(group_by)
+zval fold_group(zval* rows, zval* aggregators)
 {
-    zval *input_array;
-    zval *group_bys;
-    zval *aggs;
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "aaa", &input_array, &group_bys, &aggs) == FAILURE) {
-      return;
+  zval first;
+  array_init(&first);
+
+  HashTable* ht = Z_ARRVAL_P(rows);
+  // HashTable * target_hash = HASH_OF(rows);
+
+  HashPosition pos;
+  uint32_t ht_iter;
+
+  // reset the pointer and update pos (HashPosition)
+  zend_hash_internal_pointer_reset_ex(ht, &pos);
+
+  // create iterator from pos
+  ht_iter = zend_hash_iterator_add(ht, pos);
+
+  zval *entry;
+  if ((entry = zend_hash_get_current_data(ht)) == NULL) {
+    return first;
+  }
+
+  zend_hash_move_forward_ex(ht, &pos);
+
+  zval key;
+  zval *zv;
+
+  do {
+    zv = zend_hash_get_current_data_ex(ht, &pos);
+    if (zv == NULL) {
+      break;
     }
+    
+    // Ensure the value is a reference. Otherwise the location of the value may be freed.
+    ZVAL_MAKE_REF(zv);
+
+    // get key
+    zend_hash_get_current_key_zval_ex(ht, &key, &pos);
+    zend_hash_move_forward_ex(ht, &pos);
+
+  } while (!EG(exception));
+  zend_hash_iterator_del(ht_iter);
+    
+  /*
+		ZVAL_DEREF(entry);
+		ZVAL_COPY(return_value, entry);
+    */
+  // zend_hash_move_forward(ht);
+	// zend_hash_get_current_key_zval(array, return_value);
+  
+  /*
+  do {
+		zv = zend_hash_get_current_data_ex(target_hash, &pos);
+				zend_hash_move_forward_ex(target_hash, &pos);
+		// Ensure the value is a reference. Otherwise the location of the value may be freed.
+		ZVAL_MAKE_REF(zv);
+		zend_hash_get_current_key_zval_ex(target_hash, &args[1], &pos);
+
+		zend_hash_move_forward_ex(target_hash, &pos);
+  }
+  */
+  return first;
+}
+
+
+zval group_items(zval* input_array, zend_string* field)
+{
+    // Allocate the group array for the current aggregation
+    zval groups_array;
+    array_init(&groups_array);
+    // ZVAL_NEW_ARR(&groups_array);
+
+    HashTable * groups_ht = Z_ARRVAL(groups_array);
 
     zend_string *key;
     ulong num_key;
-    zval *val;
-    HashTable * ht = Z_ARRVAL_P(input_array);
-    ZEND_HASH_FOREACH_KEY_VAL(ht, num_key, key, val) {
-      if (key) {
+    zval *row;
 
+    ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(input_array), num_key, key, row) {
+      // if (key) { }
+      // find the key in the row array.
+      zval* row_key;
+      if ((row_key = zend_hash_find(Z_ARRVAL_P(row), field)) != NULL) {
+        zval* group;
+        if ((group = zend_hash_find(groups_ht, Z_STR_P(row_key))) == NULL) {
+          // Allocate a new group array
+          zval new_group;
+          array_init(&new_group);
+
+          // Set the group array into the groups array.
+          if ((group = zend_hash_update(groups_ht, Z_STR_P(row_key), &new_group)) == NULL) {
+            // XXX: failed
+          }
+        }
+
+        // Append the row into the group array
+        Z_ADDREF_P(row);
+        add_next_index_zval(group, row);
       }
+
+    } ZEND_HASH_FOREACH_END();
+    return groups_array;
+}
+
+
+PHP_FUNCTION(group_by)
+{
+    zval *input_array;
+    zval *group_by_fields;
+    zval *aggregators;
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "aaa", &input_array, &group_by_fields, &aggregators) == FAILURE) {
+        return;
     }
-    ZEND_HASH_FOREACH_END();
+
+    zval *field;
+    ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(group_by_fields), field) {
+
+      zval groups = group_items(input_array, Z_STR_P(field));
+      zval_ptr_dtor(&groups);
+      /*
+
+      // php_var_dump(&groups, 1);
+
+      zval* group;
+      ZEND_HASH_FOREACH_VAL(Z_ARRVAL(groups), group) {
+
+        // fold_group(group, aggregators);
+
+      } ZEND_HASH_FOREACH_END();
+
+      */
+
+    } ZEND_HASH_FOREACH_END();
+
+    // (zv, copy, dtor)
+    // RETURN_ZVAL( );
     RETURN_FALSE;
 }

@@ -11,4 +11,5 @@ group_by([
 ], ['category'], [
     'amount' => 'sum',
 ]);
+// print_r( );
 --EXPECT--
