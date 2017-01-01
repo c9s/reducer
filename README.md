@@ -4,7 +4,7 @@ reducer
 map and reduce functions implemented in PHP extension.
 
 ```php
-$ret = group_by([ 
+$rows = group_by([ 
     [ 'category' => 'Food', 'type' => 'pasta', 'amount' => 1, 'foo' => 10 ],
     [ 'category' => 'Food', 'type' => 'pasta', 'amount' => 1 ],
     [ 'category' => 'Food', 'type' => 'juice', 'amount' => 1 ],
