@@ -75,69 +75,71 @@ PHP_MINFO_FUNCTION(reducer)
 }
 
 
-zval fold_group(zval* rows, zval* aggregators)
+zval fold_group(zval* rows, zend_string* field, zval* aggregators)
 {
-  zval first;
-  array_init(&first);
+  zval result;
+  array_init(&result);
 
-  HashTable* ht = Z_ARRVAL_P(rows);
-  // HashTable * target_hash = HASH_OF(rows);
+  zval *row;
+  zval *result_val = NULL;
+  zval *current;
 
-  HashPosition pos;
-  uint32_t ht_iter;
+  ZEND_HASH_FOREACH_VAL(HASH_OF(rows), row) {
 
-  // reset the pointer and update pos (HashPosition)
-  zend_hash_internal_pointer_reset_ex(ht, &pos);
+    zend_string *key;
 
-  // create iterator from pos
-  // ht_iter = zend_hash_iterator_add(ht, pos);
-
-  zval *entry;
-  if ((entry = zend_hash_get_current_data(ht)) == NULL) {
-    return first;
-  }
-  return first;
-
-  zend_hash_move_forward_ex(ht, &pos);
-
-  zval key;
-  zval *zv;
-
-  do {
-    zv = zend_hash_get_current_data_ex(ht, &pos);
-    if (zv == NULL) {
-      break;
+    result_val = zend_hash_find(Z_ARRVAL(result), field);
+    if (result_val == NULL) {
+      zval *tmp;
+      if ((tmp = zend_hash_find(Z_ARRVAL_P(row), field)) != NULL) {
+        result_val = zend_hash_add_new(Z_ARRVAL(result), field, tmp);
+        zval_add_ref(result_val);
+      }
     }
-    
-    // Ensure the value is a reference. Otherwise the location of the value may be freed.
-    ZVAL_MAKE_REF(zv);
 
-    // get key
-    zend_hash_get_current_key_zval_ex(ht, &key, &pos);
-    zend_hash_move_forward_ex(ht, &pos);
+    zval *aggregator;
+    ZEND_HASH_FOREACH_STR_KEY_VAL(HASH_OF(aggregators), key, aggregator) {
+        if (Z_TYPE_P(aggregator) != IS_LONG) {
+          continue;
+        }
 
-  } while (!EG(exception));
-  // zend_hash_iterator_del(ht_iter);
-    
-  /*
-		ZVAL_DEREF(entry);
-		ZVAL_COPY(return_value, entry);
-    */
-  // zend_hash_move_forward(ht);
-	// zend_hash_get_current_key_zval(array, return_value);
-  
-  /*
-  do {
-		zv = zend_hash_get_current_data_ex(target_hash, &pos);
-				zend_hash_move_forward_ex(target_hash, &pos);
-		// Ensure the value is a reference. Otherwise the location of the value may be freed.
-		ZVAL_MAKE_REF(zv);
-		zend_hash_get_current_key_zval_ex(target_hash, &args[1], &pos);
+        current = zend_hash_find(HASH_OF(row), key);
 
-		zend_hash_move_forward_ex(target_hash, &pos);
-  }
-  */
-  return first;
+        // get the carried value, and then use aggregator to reduce the values.
+        result_val = zend_hash_find(Z_ARRVAL(result), key);
+
+        switch (Z_LVAL_P(aggregator)) {
+          case REDUCER_SUM:
+            if (result_val == NULL) {
+                // result_val = zend_hash_update(Z_ARRVAL(result), key, current);
+                result_val = zend_hash_add_new(Z_ARRVAL(result), key, current);
+                zval_add_ref(result_val);
+            } else {
+                Z_LVAL_P(result_val) = Z_LVAL_P(result_val) + Z_LVAL_P(current);
+            }
+            break;
+          case REDUCER_COUNT:
+            if (result_val == NULL) {
+                zval tmp;
+                ZVAL_LONG(&tmp, 0);
+                result_val = zend_hash_add_new(Z_ARRVAL(result), key, &tmp);
+                zval_add_ref(result_val);
+            } else {
+                Z_LVAL_P(result_val)++;
+            }
+            break;
+          case REDUCER_AVG:
+            break;
+          case REDUCER_LAST:
+            break;
+          case REDUCER_FIRST:
+            break;
+        }
+
+    } ZEND_HASH_FOREACH_END();
+
+  } ZEND_HASH_FOREACH_END();
+  return result;
 }
 
 
@@ -193,6 +195,7 @@ PHP_FUNCTION(group_by)
 
     array_init(return_value);
 
+
     zval *field;
     ZEND_HASH_FOREACH_VAL(HASH_OF(fields), field) {
 
@@ -200,11 +203,16 @@ PHP_FUNCTION(group_by)
 
       zval* group;
       ZEND_HASH_FOREACH_VAL(Z_ARRVAL(groups), group) {
-        zval fold = fold_group(group, aggregators);
-        zval_ptr_dtor(&fold);
-      } ZEND_HASH_FOREACH_END();
-      add_next_index_zval(return_value, &groups);
 
+        zval fold_result = fold_group(group, Z_STR_P(field), aggregators);
+        add_next_index_zval(return_value, &fold_result);
+        // zval_add_ref(&fold_result);
+
+      } ZEND_HASH_FOREACH_END();
+
+      zval_ptr_dtor(&groups);
+
+      // add_next_index_zval(return_value, &groups);
 
 
     } ZEND_HASH_FOREACH_END();
