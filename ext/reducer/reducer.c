@@ -147,37 +147,30 @@ zval group_items(zval* rows, zend_string* field)
 {
     // Allocate the group array for the current aggregation
     zval groups_array;
+    HashTable * groups_ht;
+
     array_init(&groups_array);
-    // ZVAL_NEW_ARR(&groups_array);
+    groups_ht = Z_ARRVAL(groups_array);
 
-    HashTable * groups_ht = Z_ARRVAL(groups_array);
-
-    zend_string *key;
-    ulong num_key;
     zval *row;
+    zval *row_key;
+    zval *group;
 
-    ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(rows), num_key, key, row) {
-      // if (key) { }
-      // find the key in the row array.
-      zval* row_key;
-      if ((row_key = zend_hash_find(Z_ARRVAL_P(row), field)) != NULL) {
-        zval* group;
-        if ((group = zend_hash_find(groups_ht, Z_STR_P(row_key))) == NULL) {
-          // Allocate a new group array
-          zval new_group;
-          array_init(&new_group);
+    ZEND_HASH_FOREACH_VAL(HASH_OF(rows), row) {
+        if ((row_key = zend_hash_find(Z_ARRVAL_P(row), field)) != NULL) {
+            if ((group = zend_hash_find(groups_ht, Z_STR_P(row_key))) == NULL) {
+                // Allocate a new group array
+                zval new_group;
+                array_init(&new_group);
 
-          // Set the group array into the groups array.
-          if ((group = zend_hash_update(groups_ht, Z_STR_P(row_key), &new_group)) == NULL) {
-            // XXX: failed
-          }
+                // Set the group array into the groups array.
+                group = zend_hash_update(groups_ht, Z_STR_P(row_key), &new_group);
+            }
+
+            // Append the row into the group array
+            zval_addref_p(row);
+            add_next_index_zval(group, row);
         }
-
-        // Append the row into the group array
-        Z_ADDREF_P(row);
-        add_next_index_zval(group, row);
-      }
-
     } ZEND_HASH_FOREACH_END();
     return groups_array;
 }
@@ -185,17 +178,17 @@ zval group_items(zval* rows, zend_string* field)
 zval group_groups(zval* groups, zval* fields) {
 
     zval *field;
+    zval *tmp_group;
+    zval *group;
+
     ZEND_HASH_FOREACH_VAL(HASH_OF(fields), field) {
 
         zval tmp_collection;
         array_init(&tmp_collection);
 
-        zval *group;
         ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(groups), group) {
 
             zval tmp_groups = group_items(group, Z_STR_P(field));
-
-            zval *tmp_group;
             ZEND_HASH_FOREACH_VAL(Z_ARRVAL(tmp_groups), tmp_group) {
                 add_next_index_zval(&tmp_collection, tmp_group);
                 zval_add_ref(tmp_group);
@@ -204,8 +197,10 @@ zval group_groups(zval* groups, zval* fields) {
 
         } ZEND_HASH_FOREACH_END();
 
-        zval_dtor(groups);
+        zval_dtor(groups); // destruct the previous groups array.
         ZVAL_COPY(groups, &tmp_collection);
+
+        // destruct tmp_collection after copying the array.
         zval_dtor(&tmp_collection);
 
     } ZEND_HASH_FOREACH_END();
@@ -220,7 +215,6 @@ zval group_rows(zval* rows, zval* fields) {
     zval groups;
     array_init(&groups);
     add_next_index_zval(&groups, rows);
-    // zval_add_ref(rows);
     return group_groups(&groups, fields);
 }
 
@@ -234,22 +228,19 @@ PHP_FUNCTION(group_by)
         return;
     }
 
-
-    array_init(return_value);
-
-    zval* group;
     zval groups;
+    zval* group;
     groups = group_rows(rows, fields);
-
 
     zval* field;
     zend_hash_internal_pointer_end(HASH_OF(fields));
     field = zend_hash_get_current_data(HASH_OF(fields));
 
-
+    // push folded result into return_value array.
+    array_init(return_value);
     ZEND_HASH_FOREACH_VAL(Z_ARRVAL(groups), group) {
-      zval fold_result = fold_group(group, Z_STR_P(field), aggregators);
-      add_next_index_zval(return_value, &fold_result);
+      zval res = fold_group(group, Z_STR_P(field), aggregators);
+      add_next_index_zval(return_value, &res);
     } ZEND_HASH_FOREACH_END();
     zval_dtor(&groups);
 }
