@@ -182,6 +182,48 @@ zval group_items(zval* rows, zend_string* field)
     return groups_array;
 }
 
+zval group_groups(zval* groups, zval* fields) {
+
+    zval *field;
+    ZEND_HASH_FOREACH_VAL(HASH_OF(fields), field) {
+
+        zval tmp_collection;
+        array_init(&tmp_collection);
+
+        zval *group;
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(groups), group) {
+
+            zval tmp_groups = group_items(group, Z_STR_P(field));
+
+            zval *tmp_group;
+            ZEND_HASH_FOREACH_VAL(Z_ARRVAL(tmp_groups), tmp_group) {
+                add_next_index_zval(&tmp_collection, tmp_group);
+                zval_add_ref(tmp_group);
+            } ZEND_HASH_FOREACH_END();
+            zval_dtor(&tmp_groups);
+
+        } ZEND_HASH_FOREACH_END();
+
+        zval_dtor(groups);
+        ZVAL_COPY(groups, &tmp_collection);
+        zval_dtor(&tmp_collection);
+
+    } ZEND_HASH_FOREACH_END();
+
+    return *groups;
+}
+
+/**
+ * group input rows into group arrays.
+ */
+zval group_rows(zval* rows, zval* fields) {
+    zval groups;
+    array_init(&groups);
+    add_next_index_zval(&groups, rows);
+    // zval_add_ref(rows);
+    return group_groups(&groups, fields);
+}
+
 
 PHP_FUNCTION(group_by)
 {
@@ -195,29 +237,35 @@ PHP_FUNCTION(group_by)
 
     array_init(return_value);
 
-
-    zval *field;
-    ZEND_HASH_FOREACH_VAL(HASH_OF(fields), field) {
-
-      zval groups = group_items(rows, Z_STR_P(field));
-
-      zval* group;
-      ZEND_HASH_FOREACH_VAL(Z_ARRVAL(groups), group) {
-
-        zval fold_result = fold_group(group, Z_STR_P(field), aggregators);
-        add_next_index_zval(return_value, &fold_result);
-        // zval_add_ref(&fold_result);
-
-      } ZEND_HASH_FOREACH_END();
-
-      zval_ptr_dtor(&groups);
-
-      // add_next_index_zval(return_value, &groups);
+    zval* group;
+    zval groups;
+    groups = group_rows(rows, fields);
 
 
+    zval* field;
+    zend_hash_internal_pointer_end(HASH_OF(fields));
+    field = zend_hash_get_current_data(HASH_OF(fields));
+
+
+    ZEND_HASH_FOREACH_VAL(Z_ARRVAL(groups), group) {
+      zval fold_result = fold_group(group, Z_STR_P(field), aggregators);
+      add_next_index_zval(return_value, &fold_result);
+      // zval_add_ref(&fold_result);
     } ZEND_HASH_FOREACH_END();
 
-    // (zv, copy, dtor)
-    // RETURN_ZVAL( );
-    // RETURN_FALSE;
+    // php_var_dump(&groups, 1);
+    // ZVAL_COPY(return_value, &groups);
+    zval_dtor(&groups);
+
+    /*
+    zval *field;
+    ZEND_HASH_FOREACH_VAL(HASH_OF(fields), field) {
+      zval tmp_groups = group_items(&rows, Z_STR_P(field));
+    } ZEND_HASH_FOREACH_END();
+    */
+
+    /*
+    // zval_ptr_dtor(&groups);
+    add_next_index_zval(return_value, &groups);
+    */
 }
