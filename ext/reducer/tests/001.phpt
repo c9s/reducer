@@ -2,7 +2,7 @@
 group_by
 --FILE--
 <?php
-group_by([ 
+$ret = group_by([ 
     [ 'category' => 'Food', 'amount' => 10 ],
     [ 'category' => 'Book', 'amount' => 30 ],
     [ 'category' => 'Drink', 'amount' => 3 ],
@@ -11,5 +11,5 @@ group_by([
 ], ['category'], [
     'amount' => 'sum',
 ]);
-// print_r( );
+print_r($ret);
 --EXPECT--
