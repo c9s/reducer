@@ -51,6 +51,7 @@ PHP_MINIT_FUNCTION(reducer)
     REGISTER_LONG_CONSTANT("REDUCER_AVG"   , REDUCER_AVG   , CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("REDUCER_COUNT" , REDUCER_COUNT , CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("REDUCER_FIRST" , REDUCER_FIRST , CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("REDUCER_LAST"  , REDUCER_LAST , CONST_CS | CONST_PERSISTENT);
     return SUCCESS;
 }
 
@@ -168,8 +169,8 @@ zval group_items(zval* rows, zend_string* field)
             }
 
             // Append the row into the group array
-            zval_addref_p(row);
             add_next_index_zval(group, row);
+            zval_addref_p(row);
         }
     } ZEND_HASH_FOREACH_END();
     return groups_array;
