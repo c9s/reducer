@@ -5,6 +5,10 @@ map and reduce functions implemented in PHP extension.
 
 [![Build Status](https://travis-ci.org/c9s/reducer.svg)](https://travis-ci.org/c9s/reducer)
 
+## CURRENT VERSION
+
+0.999 - API unstable
+
 ## SYNOPSIS
 
 ```php
