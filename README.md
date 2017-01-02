@@ -24,31 +24,14 @@ $rows = group_by([
 print_r($ret);
 ```
 
+## AGGREGATORS
 
-```
-Array (
-    [0] => Array (
-            [type] => pasta
-            [amount] => 2
-            [cnt] => 1
-        )
-    [1] => Array (
-            [type] => juice
-            [amount] => 2
-            [cnt] => 1
-        )
-    [2] => Array (
-            [type] => programming
-            [amount] => 7
-            [cnt] => 1
-        )
-    [3] => Array (
-            [type] => cooking
-            [amount] => 8
-            [cnt] => 1
-        )
-)
-```
+- `REDUCER_SUM`
+- `REDUCER_COUNT`
+- `REDUCER_MIN`
+- `REDUCER_MAX`
+- `REDUCER_AVG`
+
 
 ## INSTALL
 
