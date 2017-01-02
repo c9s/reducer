@@ -105,14 +105,17 @@ zval fold_group(zval* rows, zend_string* field, zval* aggregators)
         if (Z_TYPE_P(aggregator) != IS_LONG) {
             continue;
         }
-        if (key == NULL) {
-            continue;
+        if (key) {
+            current = zend_hash_find(HASH_OF(row), key);
+
+            // get the carried value, and then use aggregator to reduce the values.
+            result_val = zend_hash_find(Z_ARRVAL(result), key);
+        } else {
+            current = zend_hash_index_find(HASH_OF(row), num_key);
+
+            // get the carried value, and then use aggregator to reduce the values.
+            result_val = zend_hash_index_find(Z_ARRVAL(result), num_key);
         }
-
-        current = zend_hash_find(HASH_OF(row), key);
-
-        // get the carried value, and then use aggregator to reduce the values.
-        result_val = zend_hash_find(Z_ARRVAL(result), key);
 
         switch (Z_LVAL_P(aggregator)) {
           case REDUCER_SUM:
@@ -120,8 +123,11 @@ zval fold_group(zval* rows, zend_string* field, zval* aggregators)
                 continue;
             }
             if (result_val == NULL) {
-                // result_val = zend_hash_update(Z_ARRVAL(result), key, current);
-                result_val = zend_hash_add_new(Z_ARRVAL(result), key, current);
+                if (key) {
+                    result_val = zend_hash_add_new(Z_ARRVAL(result), key, current);
+                } else {
+                    result_val = zend_hash_index_add_new(Z_ARRVAL(result), num_key, current);
+                }
                 zval_add_ref(result_val);
             } else {
                 Z_LVAL_P(result_val) = Z_LVAL_P(result_val) + Z_LVAL_P(current);
@@ -131,7 +137,11 @@ zval fold_group(zval* rows, zend_string* field, zval* aggregators)
             if (result_val == NULL) {
                 zval tmp;
                 ZVAL_LONG(&tmp, 0);
-                result_val = zend_hash_add_new(Z_ARRVAL(result), key, &tmp);
+                if (key) {
+                    result_val = zend_hash_add_new(Z_ARRVAL(result), key, &tmp);
+                } else {
+                    result_val = zend_hash_index_add_new(Z_ARRVAL(result), num_key, &tmp);
+                }
                 zval_add_ref(result_val);
             } else {
                 Z_LVAL_P(result_val)++;
