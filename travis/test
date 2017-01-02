@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+cd ext/reducer
+phpize
+./configure --enable-reducer && make && make test
