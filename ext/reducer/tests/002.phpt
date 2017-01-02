@@ -21,6 +21,7 @@ Array
 (
     [0] => Array
         (
+            [category] => Food
             [type] => pasta
             [amount] => 2
             [cnt] => 1
@@ -28,6 +29,7 @@ Array
 
     [1] => Array
         (
+            [category] => Food
             [type] => juice
             [amount] => 2
             [cnt] => 1
@@ -35,6 +37,7 @@ Array
 
     [2] => Array
         (
+            [category] => Book
             [type] => programming
             [amount] => 7
             [cnt] => 1
@@ -42,6 +45,7 @@ Array
 
     [3] => Array
         (
+            [category] => Book
             [type] => cooking
             [amount] => 8
             [cnt] => 1

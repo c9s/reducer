@@ -76,7 +76,7 @@ PHP_MINFO_FUNCTION(reducer)
 }
 
 
-zval fold_group(zval* rows, zend_string* field, zval* aggregators)
+zval fold_group(zval* rows, zval* fields, zval* aggregators)
 {
   zval result;
   array_init(&result);
@@ -85,17 +85,24 @@ zval fold_group(zval* rows, zend_string* field, zval* aggregators)
   zval *result_val = NULL;
   zval *current;
 
+  zend_hash_internal_pointer_reset(Z_ARRVAL_P(rows));
+  zval *first;
+  zval *field;
+  if ((first = zend_hash_get_current_data(Z_ARRVAL_P(rows))) != NULL) {
+      ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(fields), field) {
+          zval *tmp;
+          if ((tmp = zend_hash_find(Z_ARRVAL_P(first), Z_STR_P(field))) != NULL) {
+              result_val = zend_hash_add_new(Z_ARRVAL(result), Z_STR_P(field), tmp);
+              zval_add_ref(result_val);
+          }
+      } ZEND_HASH_FOREACH_END();
+  }
+  
+  
+
+
   ZEND_HASH_FOREACH_VAL(HASH_OF(rows), row) {
 
-
-    result_val = zend_hash_find(Z_ARRVAL(result), field);
-    if (result_val == NULL) {
-      zval *tmp;
-      if ((tmp = zend_hash_find(Z_ARRVAL_P(row), field)) != NULL) {
-        result_val = zend_hash_add_new(Z_ARRVAL(result), field, tmp);
-        zval_add_ref(result_val);
-      }
-    }
 
     zval *aggregator;
     ulong num_key;
@@ -263,7 +270,7 @@ PHP_FUNCTION(group_by)
     // push folded result into return_value array.
     array_init(return_value);
     ZEND_HASH_FOREACH_VAL(Z_ARRVAL(groups), group) {
-      zval res = fold_group(group, Z_STR_P(field), aggregators);
+      zval res = fold_group(group, fields, aggregators);
       add_next_index_zval(return_value, &res);
     } ZEND_HASH_FOREACH_END();
     zval_dtor(&groups);
