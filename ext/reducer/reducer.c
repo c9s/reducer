@@ -87,7 +87,6 @@ zval fold_group(zval* rows, zend_string* field, zval* aggregators)
 
   ZEND_HASH_FOREACH_VAL(HASH_OF(rows), row) {
 
-    zend_string *key;
 
     result_val = zend_hash_find(Z_ARRVAL(result), field);
     if (result_val == NULL) {
@@ -99,9 +98,15 @@ zval fold_group(zval* rows, zend_string* field, zval* aggregators)
     }
 
     zval *aggregator;
-    ZEND_HASH_FOREACH_STR_KEY_VAL(HASH_OF(aggregators), key, aggregator) {
+    ulong num_key;
+    zend_string *key;
+
+    ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(aggregators), num_key, key, aggregator) {
         if (Z_TYPE_P(aggregator) != IS_LONG) {
-          continue;
+            continue;
+        }
+        if (key == NULL) {
+            continue;
         }
 
         current = zend_hash_find(HASH_OF(row), key);
