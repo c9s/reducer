@@ -92,10 +92,13 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
   zval *result_val = NULL;
   zval *current;
 
-  zend_hash_internal_pointer_reset(Z_ARRVAL_P(rows));
+
+  HashTable *ht = Z_ARRVAL_P(rows);
+
+  zend_hash_internal_pointer_reset(ht);
   zval *first;
   zval *field;
-  if ((first = zend_hash_get_current_data(Z_ARRVAL_P(rows))) != NULL) {
+  if ((first = zend_hash_get_current_data(ht)) != NULL) {
       ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(fields), field) {
           zval *tmp;
           if ((tmp = zend_hash_find(Z_ARRVAL_P(first), Z_STR_P(field))) != NULL) {
@@ -108,8 +111,7 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
   
 
 
-  ZEND_HASH_FOREACH_VAL(HASH_OF(rows), row) {
-
+  ZEND_HASH_FOREACH_VAL(ht, row) {
 
     zval *aggregator;
     ulong num_key;
