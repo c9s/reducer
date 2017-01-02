@@ -18,9 +18,7 @@ extern zend_module_entry reducer_module_entry;
 #include "TSRM.h"
 #endif
 
-
-// XXX: replace the version
-#define PHP_REDUCER_VERSION PHP_VERSION
+#define PHP_REDUCER_VERSION "0.999"
 
 #define REDUCER_COUNT             2               
 #define REDUCER_FIRST             3
