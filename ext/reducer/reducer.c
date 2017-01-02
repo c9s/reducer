@@ -260,12 +260,8 @@ PHP_FUNCTION(group_by)
     }
 
     zval groups;
-    zval* group;
+    zval *group;
     groups = group_rows(rows, fields TSRMLS_CC);
-
-    zval* field;
-    zend_hash_internal_pointer_end(HASH_OF(fields));
-    field = zend_hash_get_current_data(HASH_OF(fields));
 
     // push folded result into return_value array.
     array_init(return_value);
