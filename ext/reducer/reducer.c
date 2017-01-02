@@ -59,6 +59,8 @@ PHP_MINIT_FUNCTION(reducer)
     REGISTER_LONG_CONSTANT("REDUCER_COUNT" , REDUCER_COUNT , CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("REDUCER_FIRST" , REDUCER_FIRST , CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("REDUCER_LAST"  , REDUCER_LAST , CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("REDUCER_MIN"  , REDUCER_MIN , CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("REDUCER_MAX"  , REDUCER_MAX , CONST_CS | CONST_PERSISTENT);
     return SUCCESS;
 }
 
@@ -108,8 +110,6 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
       } ZEND_HASH_FOREACH_END();
   }
   
-  
-
   zval *aggregator;
   ulong num_key;
   zend_string *key;
@@ -133,6 +133,7 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
             result_val = zend_hash_index_find(Z_ARRVAL(result), num_key);
         }
 
+
         switch (Z_LVAL_P(aggregator)) {
           case REDUCER_AVG:
           case REDUCER_SUM:
@@ -140,10 +141,14 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
                 continue;
             }
             if (result_val == NULL) {
+                zval tmp;
+                ZVAL_COPY(&tmp, current);
+                SEPARATE_ZVAL(&tmp);
+
                 if (key) {
-                    result_val = zend_hash_add_new(Z_ARRVAL(result), key, current);
+                    result_val = zend_hash_add_new(Z_ARRVAL(result), key, &tmp);
                 } else {
-                    result_val = zend_hash_index_add_new(Z_ARRVAL(result), num_key, current);
+                    result_val = zend_hash_index_add_new(Z_ARRVAL(result), num_key, &tmp);
                 }
                 zval_add_ref(result_val);
             } else {
@@ -279,6 +284,7 @@ zval group_rows(zval* rows, zval* fields TSRMLS_DC) {
     zval groups;
     array_init(&groups);
     add_next_index_zval(&groups, rows);
+    zval_add_ref(rows);
     return group_groups(&groups, fields TSRMLS_CC);
 }
 

@@ -26,6 +26,8 @@ extern zend_module_entry reducer_module_entry;
 #define REDUCER_LAST              4
 #define REDUCER_AVG               5
 #define REDUCER_SUM               6
+#define REDUCER_MIN               7
+#define REDUCER_MAX               8
 
 // #define REDUCER_ASC 2
 
