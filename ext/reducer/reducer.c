@@ -110,17 +110,17 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
   
   
 
+  zval *aggregator;
+  ulong num_key;
+  zend_string *key;
 
   ZEND_HASH_FOREACH_VAL(ht, row) {
-
-    zval *aggregator;
-    ulong num_key;
-    zend_string *key;
 
     ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(aggregators), num_key, key, aggregator) {
         if (Z_TYPE_P(aggregator) != IS_LONG) {
             continue;
         }
+
         if (key) {
             current = zend_hash_find(HASH_OF(row), key);
 
@@ -134,6 +134,7 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
         }
 
         switch (Z_LVAL_P(aggregator)) {
+          case REDUCER_AVG:
           case REDUCER_SUM:
             if (current == NULL) {
                 continue;
@@ -163,8 +164,6 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
                 Z_LVAL_P(result_val)++;
             }
             break;
-          case REDUCER_AVG:
-            break;
           case REDUCER_LAST:
             break;
           case REDUCER_FIRST:
@@ -174,6 +173,31 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
     } ZEND_HASH_FOREACH_END();
 
   } ZEND_HASH_FOREACH_END();
+
+  zend_long cnt = zend_array_count(Z_ARRVAL_P(rows));
+
+  ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(aggregators), num_key, key, aggregator) {
+      if (Z_TYPE_P(aggregator) != IS_LONG) {
+          continue;
+      }
+
+      if (key) {
+          result_val = zend_hash_find(Z_ARRVAL(result), key);
+      } else {
+          result_val = zend_hash_index_find(Z_ARRVAL(result), num_key);
+      }
+      if (result_val == NULL) {
+          continue;
+      }
+
+      switch (Z_LVAL_P(aggregator)) {
+          case REDUCER_AVG:
+              convert_to_double(result_val);
+              Z_DVAL_P(result_val) /= cnt;
+          break;
+      }
+  } ZEND_HASH_FOREACH_END();
+
   return result;
 }
 
