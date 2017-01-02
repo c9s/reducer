@@ -105,6 +105,9 @@ zval fold_group(zval* rows, zend_string* field, zval* aggregators)
         }
 
         current = zend_hash_find(HASH_OF(row), key);
+        if (current == NULL) {
+          continue;
+        }
 
         // get the carried value, and then use aggregator to reduce the values.
         result_val = zend_hash_find(Z_ARRVAL(result), key);
