@@ -183,11 +183,9 @@ zval group_items(zval* rows, zend_string* field)
     return groups_array;
 }
 
-zval group_groups(zval* groups, zval* fields) {
+zval group_groups(zval* groups, zval* fields TSRMLS_DC) {
 
-    zval *field;
-    zval *tmp_group;
-    zval *group;
+    zval *field, *tmp_group, *group;
 
     ZEND_HASH_FOREACH_VAL(HASH_OF(fields), field) {
 
@@ -219,11 +217,11 @@ zval group_groups(zval* groups, zval* fields) {
 /**
  * group input rows into group arrays.
  */
-zval group_rows(zval* rows, zval* fields) {
+zval group_rows(zval* rows, zval* fields TSRMLS_DC) {
     zval groups;
     array_init(&groups);
     add_next_index_zval(&groups, rows);
-    return group_groups(&groups, fields);
+    return group_groups(&groups, fields TSRMLS_CC);
 }
 
 
@@ -238,7 +236,7 @@ PHP_FUNCTION(group_by)
 
     zval groups;
     zval* group;
-    groups = group_rows(rows, fields);
+    groups = group_rows(rows, fields TSRMLS_CC);
 
     zval* field;
     zend_hash_internal_pointer_end(HASH_OF(fields));
