@@ -4,6 +4,7 @@ reducer
 map and reduce functions implemented in PHP extension.
 
 [![Build Status](https://travis-ci.org/c9s/reducer.svg)](https://travis-ci.org/c9s/reducer)
+[![PHP 7 ready](http://php7ready.timesplinter.ch/Codeception/Codeception/badge.svg)]
 
 ## CURRENT VERSION
 
