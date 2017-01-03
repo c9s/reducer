@@ -1,8 +1,12 @@
 <?php
+
+$N = 1000000;
+echo "Generating ", number_format($N), " rows...\n";
+
 $rows = [];
 $cates = ['Food', 'Book', 'Drink'];
 $amounts = range(10, 200, 10);
-for ($i = 0; $i < 1000000; $i++) {
+for ($i = 0; $i < $N; $i++) {
     $rows[] = [
         'category' => array_rand($cates),
         'amount' => array_rand($amounts),
@@ -10,13 +14,14 @@ for ($i = 0; $i < 1000000; $i++) {
     ];
 }
 
-$start = microtime(true);
 
+echo "Reducing...\n";
+$start = microtime(true);
 $result = group_by($rows, ['category'], [
     'amount' => REDUCER_SUM,
 ]);
 
-echo count($rows), " rows\n";
+echo number_format($N), " rows\n";
 
 $duration = microtime(true) - $start;
 echo $duration * 1000 , "ms\n";
