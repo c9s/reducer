@@ -9,6 +9,7 @@ for ($i = 0; $i < 100000; $i++) {
     $rows[] = [
         'category' => array_rand($cates),
         'amount' => array_rand($amounts),
+        'title' => 'Test Data',
     ];
 }
 $result = group_by($rows, ['category'], [
