@@ -14,7 +14,6 @@ $rows = [
     [ 'category' => 'Book', 'type' => 'cooking', 'amount' => 2 ],
 ];
 $ret = group_by($rows, ['category','type'], [
-    // 'amount' => REDUCER_SUM,
     'total_amount' => [
         'selector' => 'amount',
         'aggregator' => REDUCER_SUM,
