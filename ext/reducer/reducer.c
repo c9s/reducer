@@ -45,6 +45,16 @@ ZEND_TSRMLS_CACHE_DEFINE()
 ZEND_GET_MODULE(reducer)
 #endif
 
+#define REDUCER_HASH_ADD_NEW(ht, num_idx, str_idx, val) \
+      (str_idx) \
+      ? zend_hash_add_new(ht, str_idx, val) \
+      : zend_hash_index_add_new(ht, num_idx, val)
+
+#define REDUCER_HASH_FIND(ht, num_idx, str_idx) \
+      (str_idx) \
+      ? zend_hash_find(ht, str_idx) \
+      : zend_hash_index_find(ht, num_idx)
+
 PHP_INI_BEGIN()
     // STD_PHP_INI_ENTRY("reducer.default",   "unsafe_raw", PHP_INI_SYSTEM|PHP_INI_PERDIR, UpdateDefaultFilter, default_filter, zend_filter_globals, filter_globals)
     // PHP_INI_ENTRY("reducer.default_flags", NULL,     PHP_INI_SYSTEM|PHP_INI_PERDIR, OnUpdateFlags)
@@ -157,11 +167,8 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
               }
           }
       }
-      if (alias) {
-          zend_hash_add_new(Z_ARRVAL(compiled_aggregators), alias, &compiled);
-      } else {
-          zend_hash_index_add_new(Z_ARRVAL(compiled_aggregators), num_key, &compiled);
-      }
+
+      REDUCER_HASH_ADD_NEW(Z_ARRVAL(compiled_aggregators), num_key, alias, &compiled);
 
   } ZEND_HASH_FOREACH_END();
 
@@ -196,21 +203,15 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
 
         switch (Z_LVAL_P(agg_type)) {
           case REDUCER_MIN:
-              if (current == NULL) {
-                  continue;
-              }
-              if (Z_TYPE_P(current) != IS_LONG && Z_TYPE_P(current) != IS_DOUBLE) {
+              if (current == NULL || (Z_TYPE_P(current) != IS_LONG && Z_TYPE_P(current) != IS_DOUBLE)) {
                   continue;
               }
               if (result_val == NULL) {
                   zval tmp;
                   ZVAL_DEREF(current);
                   ZVAL_COPY(&tmp, current);
-                  if (alias) {
-                      result_val = zend_hash_add_new(result_ht, alias, &tmp);
-                  } else {
-                      result_val = zend_hash_index_add_new(result_ht, num_key, &tmp);
-                  }
+                  result_val = REDUCER_HASH_ADD_NEW(result_ht, num_key, alias, &tmp);
+
               } else {
                   switch (Z_TYPE_P(result_val) ) {
                       case IS_LONG:
@@ -227,21 +228,14 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
               }
               break;
           case REDUCER_MAX:
-              if (current == NULL) {
-                  continue;
-              }
-              if (Z_TYPE_P(current) != IS_LONG && Z_TYPE_P(current) != IS_DOUBLE) {
+              if (current == NULL || (Z_TYPE_P(current) != IS_LONG && Z_TYPE_P(current) != IS_DOUBLE)) {
                   continue;
               }
               if (result_val == NULL) {
                   zval tmp;
+                  ZVAL_DEREF(current);
                   ZVAL_COPY(&tmp, current);
-                  SEPARATE_ZVAL(&tmp);
-                  if (alias) {
-                      result_val = zend_hash_add_new(result_ht, alias, &tmp);
-                  } else {
-                      result_val = zend_hash_index_add_new(result_ht, num_key, &tmp);
-                  }
+                  result_val = REDUCER_HASH_ADD_NEW(result_ht, num_key, alias, &tmp);
               } else {
                   switch (Z_TYPE_P(result_val) ) {
                       case IS_LONG:
@@ -259,50 +253,38 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
               break;
           case REDUCER_AVG:
           case REDUCER_SUM:
-            if (current == NULL) {
-                continue;
-            }
-            if (Z_TYPE_P(current) != IS_LONG && Z_TYPE_P(current) != IS_DOUBLE) {
-                continue;
-            }
-            if (result_val == NULL) {
-                zval tmp;
-                ZVAL_COPY(&tmp, current);
-                SEPARATE_ZVAL(&tmp);
-
-                if (alias) {
-                    zend_hash_add_new(result_ht, alias, &tmp);
-                } else {
-                    zend_hash_index_add_new(result_ht, num_key, &tmp);
-                }
-            } else {
-                switch (Z_TYPE_P(result_val) ) {
-                    case IS_LONG:
-                        Z_LVAL_P(result_val) += Z_LVAL_P(current);
-                    break;
-                    case IS_DOUBLE:
-                        Z_DVAL_P(result_val) += Z_DVAL_P(current);
-                    break;
-                }
-            }
-            break;
+              if (current == NULL || (Z_TYPE_P(current) != IS_LONG && Z_TYPE_P(current) != IS_DOUBLE)) {
+                  continue;
+              }
+              if (result_val == NULL) {
+                  zval tmp;
+                  ZVAL_DEREF(current);
+                  ZVAL_COPY(&tmp, current);
+                  result_val = REDUCER_HASH_ADD_NEW(result_ht, num_key, alias, &tmp);
+              } else {
+                  switch (Z_TYPE_P(result_val) ) {
+                      case IS_LONG:
+                          Z_LVAL_P(result_val) += Z_LVAL_P(current);
+                      break;
+                      case IS_DOUBLE:
+                          Z_DVAL_P(result_val) += Z_DVAL_P(current);
+                      break;
+                  }
+              }
+              break;
           case REDUCER_COUNT:
-            if (result_val == NULL) {
-                zval tmp;
-                ZVAL_LONG(&tmp, 0);
-                if (alias) {
-                    zend_hash_add_new(result_ht, alias, &tmp);
-                } else {
-                    zend_hash_index_add_new(result_ht, num_key, &tmp);
-                }
-            } else {
-                Z_LVAL_P(result_val)++;
-            }
-            break;
+              if (result_val == NULL) {
+                  zval tmp;
+                  ZVAL_LONG(&tmp, 0);
+                  result_val = REDUCER_HASH_ADD_NEW(result_ht, num_key, alias, &tmp);
+              } else {
+                  Z_LVAL_P(result_val)++;
+              }
+              break;
           case REDUCER_LAST:
-            break;
+              break;
           case REDUCER_FIRST:
-            break;
+              break;
         }
 
     } ZEND_HASH_FOREACH_END();
@@ -315,11 +297,8 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
       if (Z_TYPE_P(agg_type) != IS_LONG) {
           continue;
       }
-      if (alias) {
-          result_val = zend_hash_find(result_ht, alias);
-      } else {
-          result_val = zend_hash_index_find(result_ht, num_key);
-      }
+
+      result_val = REDUCER_HASH_FIND(result_ht, num_key, alias);
       if (result_val != NULL) {
           switch (Z_LVAL_P(agg_type)) {
               case REDUCER_AVG:
