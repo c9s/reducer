@@ -23,7 +23,10 @@ $rows = group_by([
     [ 'category' => 'Book', 'type' => 'cooking', 'amount' => 6 ],
     [ 'category' => 'Book', 'type' => 'cooking', 'amount' => 2 ],
 ], ['category','type'], [
-    'amount' => REDUCER_SUM,
+    'total_amount' => [
+        'selector' => 'amount',
+        'aggregator' => REDUCER_SUM,
+    ],
     'cnt' => REDUCER_COUNT,
 ]);
 print_r($ret);
