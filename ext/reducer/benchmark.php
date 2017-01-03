@@ -1,4 +1,7 @@
 <?php
+if (!extension_loaded('reducer')) {
+    require "../../src/Reducer.php";
+}
 
 $N = 1000000;
 echo "Generating ", number_format($N), " rows...\n";

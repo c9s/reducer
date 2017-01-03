@@ -36,6 +36,12 @@ print_r($ret);
 - `REDUCER_MAX`
 - `REDUCER_AVG`
 
+## BENCHMARKS
+
+|Rows(N)    |PHP        |Extension   |Memroy   |
+|-----------|-----------|------------|---------|
+|100,000    |264ms      |98ms        |50MB     |
+|1,000,000  |2,862ms    |918ms       |477MB    |
 
 ## INSTALL
 
