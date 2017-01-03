@@ -392,8 +392,9 @@ zval group_groups(zval* groups, zval* fields TSRMLS_DC) {
 zval group_rows(zval* rows, zval* fields TSRMLS_DC) {
     zval groups;
     array_init(&groups);
+
+    Z_ADDREF_P(rows);
     add_next_index_zval(&groups, rows);
-    zval_add_ref(rows);
     return group_groups(&groups, fields TSRMLS_CC);
 }
 
