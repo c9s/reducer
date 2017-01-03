@@ -106,21 +106,44 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
       } ZEND_HASH_FOREACH_END();
   }
   
-  zval *aggregator;
+  zval *aggregator, *tmp;
   ulong num_key;
-  zend_string *key;
+  zend_string *key, *selector, *alias;
 
   ZEND_HASH_FOREACH_VAL(ht, row) {
 
     ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(aggregators), num_key, key, aggregator) {
-        if (Z_TYPE_P(aggregator) != IS_LONG) {
+
+        // update alias
+        alias = key;
+
+        if (Z_TYPE_P(aggregator) == IS_ARRAY) {
+
+            // Fetch selector from aggregator config
+            tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "selector", sizeof("selector") -1);
+            if (tmp) { 
+                selector = Z_STR_P(tmp);
+            } else {
+                selector = key;
+            }
+
+            tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "aggregator", sizeof("aggregator") -1);
+            if (tmp != NULL) {
+                aggregator = tmp;
+            }
+
+        } else if (Z_TYPE_P(aggregator) == IS_LONG) {
+
+            selector = key;
+
+        } else {
             continue;
         }
 
         // get the carried value, and then use aggregator to reduce the values.
-        if (key) {
-            current = zend_hash_find(HASH_OF(row), key);
-            result_val = zend_hash_find(Z_ARRVAL(result), key);
+        if (selector && alias) {
+            current = zend_hash_find(HASH_OF(row), selector);
+            result_val = zend_hash_find(Z_ARRVAL(result), alias);
         } else {
             current = zend_hash_index_find(HASH_OF(row), num_key);
             result_val = zend_hash_index_find(Z_ARRVAL(result), num_key);
@@ -138,8 +161,8 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
                   zval tmp;
                   ZVAL_COPY(&tmp, current);
                   SEPARATE_ZVAL(&tmp);
-                  if (key) {
-                      result_val = zend_hash_add_new(Z_ARRVAL(result), key, &tmp);
+                  if (alias) {
+                      result_val = zend_hash_add_new(Z_ARRVAL(result), alias, &tmp);
                   } else {
                       result_val = zend_hash_index_add_new(Z_ARRVAL(result), num_key, &tmp);
                   }
@@ -170,8 +193,8 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
                   zval tmp;
                   ZVAL_COPY(&tmp, current);
                   SEPARATE_ZVAL(&tmp);
-                  if (key) {
-                      result_val = zend_hash_add_new(Z_ARRVAL(result), key, &tmp);
+                  if (alias) {
+                      result_val = zend_hash_add_new(Z_ARRVAL(result), alias, &tmp);
                   } else {
                       result_val = zend_hash_index_add_new(Z_ARRVAL(result), num_key, &tmp);
                   }
@@ -204,8 +227,8 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
                 ZVAL_COPY(&tmp, current);
                 SEPARATE_ZVAL(&tmp);
 
-                if (key) {
-                    result_val = zend_hash_add_new(Z_ARRVAL(result), key, &tmp);
+                if (alias) {
+                    result_val = zend_hash_add_new(Z_ARRVAL(result), alias, &tmp);
                 } else {
                     result_val = zend_hash_index_add_new(Z_ARRVAL(result), num_key, &tmp);
                 }
@@ -225,8 +248,8 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
             if (result_val == NULL) {
                 zval tmp;
                 ZVAL_LONG(&tmp, 0);
-                if (key) {
-                    result_val = zend_hash_add_new(Z_ARRVAL(result), key, &tmp);
+                if (alias) {
+                    result_val = zend_hash_add_new(Z_ARRVAL(result), alias, &tmp);
                 } else {
                     result_val = zend_hash_index_add_new(Z_ARRVAL(result), num_key, &tmp);
                 }
