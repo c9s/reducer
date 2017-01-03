@@ -1,5 +1,5 @@
 --TEST--
-group_by
+group_by avg
 --FILE--
 <?php
 $ret = group_by([ 
