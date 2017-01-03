@@ -182,7 +182,6 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
               }
           }
       } else {
-          // if (Z_TYPE_P(aggregator) != IS_ARRAY && Z_TYPE_P(aggregator) != IS_LONG) {
           zval_dtor(&compiled);
           php_error_docref(NULL, E_USER_ERROR, "Unsupported aggregator");
       }
@@ -190,11 +189,6 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
       REDUCER_HASH_ADD_NEW(Z_ARRVAL(compiled_aggregators), num_key, alias, &compiled);
 
   } ZEND_HASH_FOREACH_END();
-
-  /*
-  zval_dtor(&compiled_aggregators);
-  return result;
-  */
 
   ZEND_HASH_FOREACH_VAL(ht, row) {
     if (Z_TYPE_P(row) != IS_ARRAY) {
