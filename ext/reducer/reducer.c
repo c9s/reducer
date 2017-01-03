@@ -97,7 +97,7 @@ PHP_MINFO_FUNCTION(reducer)
 
 zval fold_rows(zval* rows, zval* fields, zval* aggregators)
 {
-  zval result, *row, *result_val, *current, *first, *field;
+  zval result, *row, *result_val, *current, *first, *field, *tmp;
 
   array_init(&result);
 
@@ -109,14 +109,13 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
 
   if ((first = zend_hash_get_current_data(ht)) != NULL) {
       ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(fields), field) {
-          zval *tmp;
           if ((tmp = zend_hash_find(Z_ARRVAL_P(first), Z_STR_P(field))) != NULL) {
               result_val = zend_hash_add_new(result_ht, Z_STR_P(field), tmp); 
           }
       } ZEND_HASH_FOREACH_END();
   }
   
-  zval *aggregator, *agg_type, *tmp, compiled_aggregators;
+  zval *aggregator, *agg_type, compiled_aggregators;
   ulong num_key, num_selector;
   zend_string *selector, *alias;
 
@@ -180,7 +179,6 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
 
         // alias might be null
         agg_type = zend_hash_index_find(Z_ARRVAL_P(aggregator), 0);
-
         tmp = zend_hash_index_find(Z_ARRVAL_P(aggregator), 1);
 
         if (Z_TYPE_P(tmp) == IS_STRING) {
@@ -195,11 +193,7 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
         }
 
         // get the carried value, and then use aggregator to reduce the values.
-        if (alias) {
-            result_val = zend_hash_find(result_ht, alias);
-        } else {
-            result_val = zend_hash_index_find(result_ht, num_key);
-        }
+        result_val = REDUCER_HASH_FIND(result_ht, num_key, alias);
 
         switch (Z_LVAL_P(agg_type)) {
           case REDUCER_MIN:
