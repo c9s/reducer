@@ -157,11 +157,14 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
 
       } else if (Z_TYPE_P(aggregator) == IS_ARRAY) {
 
-          tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "aggregator", sizeof("aggregator") -1);
+          tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "aggregator", sizeof("aggregator") - 1);
           if (tmp == NULL) {
               php_error_docref(NULL, E_USER_ERROR, "Aggregator is not defined.");
           }
           ZVAL_DEREF(tmp);
+          if (Z_REFCOUNTED_P(tmp)) {
+              Z_ADDREF_P(tmp);
+          }
           tmp = zend_hash_index_add_new(Z_ARRVAL(compiled), 0, tmp);
 
           tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "selector", sizeof("selector") -1);
