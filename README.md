@@ -6,11 +6,11 @@ map and reduce functions implemented in PHP extension.
 [![Build Status](https://travis-ci.org/c9s/reducer.svg)](https://travis-ci.org/c9s/reducer)
 ![PHP 7 ready](http://php7ready.timesplinter.ch/Codeception/Codeception/badge.svg)
 
-## CURRENT VERSION
+## Current Status
 
 0.999 - API unstable
 
-## SYNOPSIS
+## Synopsis
 
 ```php
 $rows = group_by([ 
@@ -32,7 +32,7 @@ $rows = group_by([
 print_r($ret);
 ```
 
-## AGGREGATORS
+## Built-in Aggregators
 
 - `REDUCER_SUM`
 - `REDUCER_COUNT`
@@ -62,15 +62,14 @@ $result = group_by($rows, ['category','type'], [
 ]);
 ```
 
-
-## BENCHMARKS
+## Benchmark
 
 |Rows(N)    |PHP        |Extension   |Memroy   |
 |-----------|-----------|------------|---------|
 |100,000    |264ms      |98ms        |50MB     |
 |1,000,000  |2,862ms    |918ms       |477MB    |
 
-## INSTALL
+## Install
 
 ```
 $ phpize
@@ -78,7 +77,8 @@ $ ./configure
 $ make install
 ```
 
+## License
 
-
+© 2017-01-01 Yo-an Lin ALL RIGHTS RESERVED
 
 
