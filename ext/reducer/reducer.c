@@ -399,9 +399,7 @@ zval group_rows(zval* rows, zval* fields TSRMLS_DC) {
 
 PHP_FUNCTION(fold_rows)
 {
-    zval *rows;
-    zval *fields;
-    zval *aggregators;
+    zval *rows, *fields, *aggregators;
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "aaa", &rows, &fields, &aggregators) == FAILURE) {
         return;
     }
@@ -412,15 +410,11 @@ PHP_FUNCTION(fold_rows)
 
 PHP_FUNCTION(group_by)
 {
-    zval *rows;
-    zval *fields;
-    zval *aggregators;
+    zval *rows, *fields, *aggregators, groups, *group;
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "aaa", &rows, &fields, &aggregators) == FAILURE) {
         return;
     }
 
-    zval groups;
-    zval *group;
     groups = group_rows(rows, fields TSRMLS_CC);
 
     // push folded result into return_value array.
