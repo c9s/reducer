@@ -87,19 +87,15 @@ PHP_MINFO_FUNCTION(reducer)
 
 zval fold_rows(zval* rows, zval* fields, zval* aggregators)
 {
-  zval result;
+  zval result, *row, *result_val, *current, *first, *field;
+
   array_init(&result);
 
-  zval *row;
-  zval *result_val = NULL;
-  zval *current;
-
-
   HashTable *ht = Z_ARRVAL_P(rows);
+  zend_long cnt = zend_array_count(ht);
 
   zend_hash_internal_pointer_reset(ht);
-  zval *first;
-  zval *field;
+
   if ((first = zend_hash_get_current_data(ht)) != NULL) {
       ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(fields), field) {
           zval *tmp;
@@ -121,18 +117,14 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
             continue;
         }
 
+        // get the carried value, and then use aggregator to reduce the values.
         if (key) {
             current = zend_hash_find(HASH_OF(row), key);
-
-            // get the carried value, and then use aggregator to reduce the values.
             result_val = zend_hash_find(Z_ARRVAL(result), key);
         } else {
             current = zend_hash_index_find(HASH_OF(row), num_key);
-
-            // get the carried value, and then use aggregator to reduce the values.
             result_val = zend_hash_index_find(Z_ARRVAL(result), num_key);
         }
-
 
         switch (Z_LVAL_P(aggregator)) {
           case REDUCER_MIN:
@@ -253,7 +245,6 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
 
   } ZEND_HASH_FOREACH_END();
 
-  zend_long cnt = zend_array_count(Z_ARRVAL_P(rows));
 
   ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(aggregators), num_key, key, aggregator) {
       if (Z_TYPE_P(aggregator) != IS_LONG) {
