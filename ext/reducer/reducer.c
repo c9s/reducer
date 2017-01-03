@@ -107,7 +107,7 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
   }
   
   zval *aggregator, *agg_type, *tmp, compiled_aggregators;
-  ulong num_key;
+  ulong num_key, num_selector;
   zend_string *selector, *alias;
 
   array_init(&compiled_aggregators);
@@ -165,24 +165,32 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
 
   } ZEND_HASH_FOREACH_END();
 
-  // zval_dtor(&compiled_aggregators);
-  // return result;
-
   ZEND_HASH_FOREACH_VAL(ht, row) {
+    if (Z_TYPE_P(row) != IS_ARRAY) {
+        php_error_docref(NULL, E_USER_ERROR, "input row is not an array.");
+    }
     ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL(compiled_aggregators), num_key, alias, aggregator) {
 
         // alias might be null
         agg_type = zend_hash_index_find(Z_ARRVAL_P(aggregator), 0);
 
-        zval *zval_selector = zend_hash_index_find(Z_ARRVAL_P(aggregator), 1);
-        selector = Z_STR_P(zval_selector);
+        tmp = zend_hash_index_find(Z_ARRVAL_P(aggregator), 1);
+
+        if (Z_TYPE_P(tmp) == IS_STRING) {
+            selector = Z_STR_P(tmp);
+            current = zend_hash_find(HASH_OF(row), selector);
+        } else if (Z_TYPE_P(tmp) == IS_LONG) {
+            num_selector = Z_LVAL_P(tmp);
+            selector = NULL;
+            current = zend_hash_index_find(HASH_OF(row), num_selector);
+        } else {
+            php_error_docref(NULL, E_USER_ERROR, "Unsupported selector.");
+        }
 
         // get the carried value, and then use aggregator to reduce the values.
         if (alias) {
-            current = zend_hash_find(HASH_OF(row), selector);
             result_val = zend_hash_find(result_ht, alias);
         } else {
-            current = zend_hash_index_find(HASH_OF(row), num_key);
             result_val = zend_hash_index_find(result_ht, num_key);
         }
 
