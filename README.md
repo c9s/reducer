@@ -40,6 +40,29 @@ print_r($ret);
 - `REDUCER_MAX`
 - `REDUCER_AVG`
 
+## Aggregating data with custom user function
+
+
+```php
+$ret = group_by($rows, ['category','type'], [
+    'amount' => function($carry, $current) {
+        return $carry + $current;
+    }
+]);
+```
+
+Aggregating with selector:
+
+```php
+$result = group_by($rows, ['category','type'], [
+    'total_amount' => [
+        'selector'   => 'amount',
+        'aggregator' => function($carry, $current) { return $carry + $current; }
+    ],
+]);
+```
+
+
 ## BENCHMARKS
 
 |Rows(N)    |PHP        |Extension   |Memroy   |
