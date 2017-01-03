@@ -32,7 +32,21 @@ $rows = group_by([
 print_r($ret);
 ```
 
-## Built-in Aggregators
+## Aggregators
+
+Aggregator definition syntax
+
+```php
+[
+    '{alias}' => [
+        'selector' => '{selector}',
+        'aggregator' => {constant | function},
+    ],
+    '{alias}' => {constant | function},
+]
+```
+
+### Built-in Aggregators
 
 - `REDUCER_SUM`
 - `REDUCER_COUNT`
@@ -40,7 +54,9 @@ print_r($ret);
 - `REDUCER_MAX`
 - `REDUCER_AVG`
 
-## Aggregating data with custom user function
+### Aggregating data with custom user function
+
+Aggregating with custom reduce function:
 
 
 ```php
