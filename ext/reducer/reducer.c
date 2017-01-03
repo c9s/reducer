@@ -128,16 +128,19 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
             }
 
             tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "aggregator", sizeof("aggregator") -1);
-            if (tmp != NULL) {
-                aggregator = tmp;
+            if (tmp == NULL) {
+                php_error_docref(NULL, E_USER_ERROR, "Aggregator is not defined.");
             }
+            aggregator = tmp;
 
         } else if (Z_TYPE_P(aggregator) == IS_LONG) {
 
             selector = key;
 
         } else {
-            continue;
+
+            php_error_docref(NULL, E_USER_ERROR, "Unsupported aggregator");
+
         }
 
         // get the carried value, and then use aggregator to reduce the values.
