@@ -92,6 +92,7 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
   array_init(&result);
 
   HashTable *ht = Z_ARRVAL_P(rows);
+  HashTable *result_ht = Z_ARRVAL(result);
   zend_long cnt = zend_array_count(ht);
 
   zend_hash_internal_pointer_reset(ht);
@@ -100,56 +101,92 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
       ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(fields), field) {
           zval *tmp;
           if ((tmp = zend_hash_find(Z_ARRVAL_P(first), Z_STR_P(field))) != NULL) {
-              result_val = zend_hash_add_new(Z_ARRVAL(result), Z_STR_P(field), tmp);
+              result_val = zend_hash_add_new(result_ht, Z_STR_P(field), tmp);
               zval_add_ref(result_val);
           }
       } ZEND_HASH_FOREACH_END();
   }
   
-  zval *aggregator, *tmp;
+  zval *aggregator, *tmp, compiled_aggregators;
   ulong num_key;
-  zend_string *key, *selector, *alias;
+  zend_string *selector, *alias;
+
+  array_init(&compiled_aggregators);
+
+  ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(aggregators), num_key, alias, aggregator) {
+      if (Z_TYPE_P(aggregator) != IS_ARRAY && Z_TYPE_P(aggregator) != IS_LONG) {
+          php_error_docref(NULL, E_USER_ERROR, "Unsupported aggregator");
+      }
+
+      zval compiled;
+      array_init(&compiled);
+
+      if (Z_TYPE_P(aggregator) == IS_LONG) {
+
+          tmp = zend_hash_index_add_new(Z_ARRVAL(compiled), 0, aggregator);
+
+          zval zval_alias;
+          if (alias) {
+              ZVAL_STR(&zval_alias, alias);
+              zend_hash_index_add_new(Z_ARRVAL(compiled), 1, &zval_alias); // selector
+          } else {
+              ZVAL_LONG(&zval_alias, num_key);
+              zend_hash_index_add_new(Z_ARRVAL(compiled), 1, &zval_alias); // selector
+          }
+
+      } else if (Z_TYPE_P(aggregator) == IS_ARRAY) {
+
+          tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "aggregator", sizeof("aggregator") -1);
+          if (tmp == NULL) {
+              php_error_docref(NULL, E_USER_ERROR, "Aggregator is not defined.");
+          }
+          ZVAL_DEREF(tmp);
+          tmp = zend_hash_index_add_new(Z_ARRVAL(compiled), 0, tmp);
+
+          tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "selector", sizeof("selector") -1);
+          if (tmp) { 
+              ZVAL_DEREF(tmp);
+              zend_hash_index_add_new(Z_ARRVAL(compiled), 1, tmp);
+          } else {
+              zval zval_alias;
+              if (alias) {
+                  ZVAL_STR(&zval_alias, alias);
+                  zend_hash_index_add_new(Z_ARRVAL(compiled), 1, &zval_alias); // selector
+              } else {
+                  ZVAL_LONG(&zval_alias, num_key);
+                  zend_hash_index_add_new(Z_ARRVAL(compiled), 1, &zval_alias); // selector
+              }
+          }
+      }
+      if (alias) {
+          zend_hash_add_new(Z_ARRVAL(compiled_aggregators), alias, &compiled);
+      } else {
+          zend_hash_index_add_new(Z_ARRVAL(compiled_aggregators), num_key, &compiled);
+      }
+
+  } ZEND_HASH_FOREACH_END();
+
+  // zval_dtor(&compiled_aggregators);
+  // return result;
 
   ZEND_HASH_FOREACH_VAL(ht, row) {
 
-    ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(aggregators), num_key, key, aggregator) {
+    zval *agg;
+    ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL(compiled_aggregators), num_key, alias, agg) {
 
-        // update alias
-        alias = key;
+        // alias might be null
+        aggregator = zend_hash_index_find(Z_ARRVAL_P(agg), 0);
 
-        if (Z_TYPE_P(aggregator) == IS_ARRAY) {
-
-            // Fetch selector from aggregator config
-            tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "selector", sizeof("selector") -1);
-            if (tmp) { 
-                selector = Z_STR_P(tmp);
-            } else {
-                selector = key;
-            }
-
-            tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "aggregator", sizeof("aggregator") -1);
-            if (tmp == NULL) {
-                php_error_docref(NULL, E_USER_ERROR, "Aggregator is not defined.");
-            }
-            aggregator = tmp;
-
-        } else if (Z_TYPE_P(aggregator) == IS_LONG) {
-
-            selector = key;
-
-        } else {
-
-            php_error_docref(NULL, E_USER_ERROR, "Unsupported aggregator");
-
-        }
+        zval *zval_selector = zend_hash_index_find(Z_ARRVAL_P(agg), 1);
+        selector = Z_STR_P(zval_selector);
 
         // get the carried value, and then use aggregator to reduce the values.
-        if (selector && alias) {
+        if (alias) {
             current = zend_hash_find(HASH_OF(row), selector);
-            result_val = zend_hash_find(Z_ARRVAL(result), alias);
+            result_val = zend_hash_find(result_ht, alias);
         } else {
             current = zend_hash_index_find(HASH_OF(row), num_key);
-            result_val = zend_hash_index_find(Z_ARRVAL(result), num_key);
+            result_val = zend_hash_index_find(result_ht, num_key);
         }
 
         switch (Z_LVAL_P(aggregator)) {
@@ -162,12 +199,12 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
               }
               if (result_val == NULL) {
                   zval tmp;
+                  ZVAL_DEREF(current);
                   ZVAL_COPY(&tmp, current);
-                  SEPARATE_ZVAL(&tmp);
                   if (alias) {
-                      result_val = zend_hash_add_new(Z_ARRVAL(result), alias, &tmp);
+                      result_val = zend_hash_add_new(result_ht, alias, &tmp);
                   } else {
-                      result_val = zend_hash_index_add_new(Z_ARRVAL(result), num_key, &tmp);
+                      result_val = zend_hash_index_add_new(result_ht, num_key, &tmp);
                   }
                   zval_add_ref(result_val);
               } else {
@@ -197,9 +234,9 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
                   ZVAL_COPY(&tmp, current);
                   SEPARATE_ZVAL(&tmp);
                   if (alias) {
-                      result_val = zend_hash_add_new(Z_ARRVAL(result), alias, &tmp);
+                      result_val = zend_hash_add_new(result_ht, alias, &tmp);
                   } else {
-                      result_val = zend_hash_index_add_new(Z_ARRVAL(result), num_key, &tmp);
+                      result_val = zend_hash_index_add_new(result_ht, num_key, &tmp);
                   }
                   zval_add_ref(result_val);
               } else {
@@ -231,9 +268,9 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
                 SEPARATE_ZVAL(&tmp);
 
                 if (alias) {
-                    result_val = zend_hash_add_new(Z_ARRVAL(result), alias, &tmp);
+                    result_val = zend_hash_add_new(result_ht, alias, &tmp);
                 } else {
-                    result_val = zend_hash_index_add_new(Z_ARRVAL(result), num_key, &tmp);
+                    result_val = zend_hash_index_add_new(result_ht, num_key, &tmp);
                 }
                 zval_add_ref(result_val);
             } else {
@@ -252,9 +289,9 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
                 zval tmp;
                 ZVAL_LONG(&tmp, 0);
                 if (alias) {
-                    result_val = zend_hash_add_new(Z_ARRVAL(result), alias, &tmp);
+                    result_val = zend_hash_add_new(result_ht, alias, &tmp);
                 } else {
-                    result_val = zend_hash_index_add_new(Z_ARRVAL(result), num_key, &tmp);
+                    result_val = zend_hash_index_add_new(result_ht, num_key, &tmp);
                 }
                 zval_add_ref(result_val);
             } else {
@@ -272,15 +309,15 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
   } ZEND_HASH_FOREACH_END();
 
 
-  ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(aggregators), num_key, key, aggregator) {
+  ZEND_HASH_FOREACH_KEY_VAL(HASH_OF(aggregators), num_key, alias, aggregator) {
       if (Z_TYPE_P(aggregator) != IS_LONG) {
           continue;
       }
 
-      if (key) {
-          result_val = zend_hash_find(Z_ARRVAL(result), key);
+      if (alias) {
+          result_val = zend_hash_find(result_ht, alias);
       } else {
-          result_val = zend_hash_index_find(Z_ARRVAL(result), num_key);
+          result_val = zend_hash_index_find(result_ht, num_key);
       }
       if (result_val == NULL) {
           continue;
@@ -294,6 +331,7 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
       }
   } ZEND_HASH_FOREACH_END();
 
+  zval_dtor(&compiled_aggregators);
   return result;
 }
 
@@ -330,8 +368,10 @@ zval group_items(zval* rows, zend_string* field)
             }
 
             // Append the row into the group array
+            if (Z_REFCOUNTED_P(row)) {
+                Z_ADDREF_P(row);
+            }
             add_next_index_zval(group, row);
-            zval_addref_p(row);
         }
     } ZEND_HASH_FOREACH_END();
     return groups_array;
@@ -350,8 +390,8 @@ zval group_groups(zval* groups, zval* fields TSRMLS_DC) {
 
             zval tmp_groups = group_items(group, Z_STR_P(field));
             ZEND_HASH_FOREACH_VAL(Z_ARRVAL(tmp_groups), tmp_group) {
-                add_next_index_zval(&tmp_collection, tmp_group);
                 zval_add_ref(tmp_group);
+                add_next_index_zval(&tmp_collection, tmp_group);
             } ZEND_HASH_FOREACH_END();
             zval_dtor(&tmp_groups);
 
