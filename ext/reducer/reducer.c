@@ -101,8 +101,7 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
       ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(fields), field) {
           zval *tmp;
           if ((tmp = zend_hash_find(Z_ARRVAL_P(first), Z_STR_P(field))) != NULL) {
-              result_val = zend_hash_add_new(result_ht, Z_STR_P(field), tmp);
-              zval_add_ref(result_val);
+              result_val = zend_hash_add_new(result_ht, Z_STR_P(field), tmp); 
           }
       } ZEND_HASH_FOREACH_END();
   }
@@ -206,7 +205,6 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
                   } else {
                       result_val = zend_hash_index_add_new(result_ht, num_key, &tmp);
                   }
-                  zval_add_ref(result_val);
               } else {
                   switch (Z_TYPE_P(result_val) ) {
                       case IS_LONG:
@@ -238,7 +236,6 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
                   } else {
                       result_val = zend_hash_index_add_new(result_ht, num_key, &tmp);
                   }
-                  zval_add_ref(result_val);
               } else {
                   switch (Z_TYPE_P(result_val) ) {
                       case IS_LONG:
@@ -272,7 +269,6 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
                 } else {
                     result_val = zend_hash_index_add_new(result_ht, num_key, &tmp);
                 }
-                zval_add_ref(result_val);
             } else {
                 switch (Z_TYPE_P(result_val) ) {
                     case IS_LONG:
@@ -293,7 +289,6 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
                 } else {
                     result_val = zend_hash_index_add_new(result_ht, num_key, &tmp);
                 }
-                zval_add_ref(result_val);
             } else {
                 Z_LVAL_P(result_val)++;
             }
