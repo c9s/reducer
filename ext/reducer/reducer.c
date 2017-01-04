@@ -497,10 +497,6 @@ PHP_FUNCTION(fold_rows)
 
     zval result = fold_rows(rows, fields, agts, agts_cnt);
     RETVAL_ZVAL(&result, 1, 1);
-    /*
-    ZVAL_COPY(return_value, &result);
-    zval_dtor(&result);
-    */
 }
 
 PHP_FUNCTION(group_by)
