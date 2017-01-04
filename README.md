@@ -85,7 +85,7 @@ $result = group_by($rows, ['category','type'], [
 |Rows(N)    |PHP        |Extension   |Memroy   |
 |-----------|-----------|------------|---------|
 |100,000    |264ms      |98ms        |50MB     |
-|1,000,000  |2,862ms    |918ms       |477MB    |
+|1,000,000  |2,862ms    |565ms       |438MB    |
 
 ## Install
 
