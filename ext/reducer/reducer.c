@@ -50,6 +50,11 @@ ZEND_GET_MODULE(reducer)
       ? zend_hash_add_new(ht, str_idx, val) \
       : zend_hash_index_add_new(ht, num_idx, val)
 
+#define REDUCER_HASH_UPDATE(ht, num_idx, str_idx, val) \
+      (str_idx) \
+      ? zend_hash_update(ht, str_idx, val) \
+      : zend_hash_index_update(ht, num_idx, val)
+
 #define REDUCER_HASH_FIND(ht, num_idx, str_idx) \
       (str_idx) \
       ? zend_hash_find(ht, str_idx) \
@@ -223,7 +228,17 @@ zval fold_rows(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
               zend_hash_add_new(result_ht, Z_STR_P(field), carry_val);
           }
       } ZEND_HASH_FOREACH_END();
+
+
+      for (agt_idx = 0; agt_idx < agts_cnt ; agt_idx++) {
+          current_agt = &agts[agt_idx];
+          if (Z_TYPE_P(current_agt->agg_type) == IS_LONG) {
+              carry_val = REDUCER_HASH_FIND(result_ht, current_agt->num_alias, current_agt->alias);
+          }
+      }
+
   }
+
 
 
 
@@ -351,8 +366,12 @@ zval fold_rows(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
                   }
                   break;
               case REDUCER_LAST:
+                  carry_val = REDUCER_HASH_UPDATE(result_ht, current_agt->num_alias, current_agt->alias, current_val);
                   break;
               case REDUCER_FIRST:
+                  if (carry_val == NULL) {
+                      carry_val = REDUCER_HASH_ADD_NEW(result_ht, current_agt->num_alias, current_agt->alias, current_val);
+                  }
                   break;
             }
         }
@@ -374,7 +393,6 @@ zval fold_rows(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
               }
           }
       }
-
   }
   return result;
 }
