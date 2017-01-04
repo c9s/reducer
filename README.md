@@ -82,7 +82,7 @@ $result = group_by($rows, ['category','type'], [
 
 ## Benchmark
 
-|Rows(N)    |PHP        |Extension   |Memroy   |
+|Rows(N)    |PHP        |Extension   |Memory   |
 |-----------|-----------|------------|---------|
 |100,000    |264ms      |98ms        |50MB     |
 |1,000,000  |2,862ms    |565ms       |438MB    |
