@@ -120,36 +120,12 @@ void compile_aggregator(compiled_agt *current_agt, zval *agg_type) {
     }
 }
 
-
-zval fold_rows(zval* rows, zval* fields, zval* aggregators)
-{
-  zval result, *row, *carry_val, *current_val, *first, *field, *tmp;
+void compile_aggregators(compiled_agt *agts, zval *aggregators) {
   compiled_agt *current_agt;
-
-  array_init(&result);
-
-  HashTable *ht = Z_ARRVAL_P(rows);
-  HashTable *result_ht = Z_ARRVAL(result);
-  zend_long cnt = zend_array_count(ht);
-
-  zend_hash_internal_pointer_reset(ht);
-
-  if ((first = zend_hash_get_current_data(ht)) != NULL) {
-      ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(fields), field) {
-          if ((tmp = zend_hash_find(Z_ARRVAL_P(first), Z_STR_P(field))) != NULL) {
-              carry_val = zend_hash_add_new(result_ht, Z_STR_P(field), tmp); 
-          }
-      } ZEND_HASH_FOREACH_END();
-  }
-  
-  zval *aggregator, *agg_type;
-  ulong num_alias, num_selector;
-  zend_string *selector, *alias;
-
-
-  zend_long agt_cnt = zend_array_count(Z_ARRVAL_P(aggregators));
-  compiled_agt agts[agt_cnt];
   uint agt_idx = 0;
+  ulong num_alias;
+  zend_string *alias;
+  zval *aggregator, *tmp;
 
   ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(aggregators), num_alias, alias, aggregator) {
       current_agt = &agts[agt_idx++];
@@ -219,6 +195,37 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
       }
 
   } ZEND_HASH_FOREACH_END();
+}
+
+
+zval fold_rows(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
+{
+  zval result, *row, *carry_val, *current_val, *first, *field, *tmp;
+  compiled_agt *current_agt;
+
+  array_init(&result);
+
+  HashTable *ht = Z_ARRVAL_P(rows);
+  HashTable *result_ht = Z_ARRVAL(result);
+  zend_long cnt = zend_array_count(ht);
+
+  zend_hash_internal_pointer_reset(ht);
+
+  if ((first = zend_hash_get_current_data(ht)) != NULL) {
+      ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(fields), field) {
+          if ((tmp = zend_hash_find(Z_ARRVAL_P(first), Z_STR_P(field))) != NULL) {
+              carry_val = zend_hash_add_new(result_ht, Z_STR_P(field), tmp); 
+          }
+      } ZEND_HASH_FOREACH_END();
+  }
+
+
+  zval *aggregator, *agg_type;
+  ulong num_alias, num_selector;
+  uint agt_idx;
+  zend_string *selector, *alias;
+
+
 
 
   // Iterate the rows and aggregate the result.
@@ -227,7 +234,7 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
         php_error_docref(NULL, E_USER_ERROR, "input row is not an array.");
     }
 
-    for (agt_idx = 0; agt_idx < agt_cnt ; agt_idx++) {
+    for (agt_idx = 0; agt_idx < agts_cnt ; agt_idx++) {
         current_agt = &agts[agt_idx];
 
         // get the carried value, and then use aggregator to reduce the values.
@@ -355,7 +362,7 @@ zval fold_rows(zval* rows, zval* fields, zval* aggregators)
   } ZEND_HASH_FOREACH_END();
 
 
-  for (agt_idx = 0; agt_idx < agt_cnt ; agt_idx++) {
+  for (agt_idx = 0; agt_idx < agts_cnt ; agt_idx++) {
       current_agt = &agts[agt_idx];
       if (Z_TYPE_P(current_agt->agg_type) == IS_LONG) {
           carry_val = REDUCER_HASH_FIND(result_ht, current_agt->num_alias, current_agt->alias);
@@ -464,7 +471,12 @@ PHP_FUNCTION(fold_rows)
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "aaa", &rows, &fields, &aggregators) == FAILURE) {
         return;
     }
-    zval result = fold_rows(rows, fields, aggregators);
+
+    zend_long agts_cnt = zend_array_count(Z_ARRVAL_P(aggregators));
+    compiled_agt agts[agts_cnt];
+    compile_aggregators(agts, aggregators);
+
+    zval result = fold_rows(rows, fields, agts, agts_cnt);
     ZVAL_COPY(return_value, &result);
     zval_dtor(&result);
 }
@@ -478,10 +490,14 @@ PHP_FUNCTION(group_by)
 
     groups = group_rows(rows, fields TSRMLS_CC);
 
+    zend_long agts_cnt = zend_array_count(Z_ARRVAL_P(aggregators));
+    compiled_agt agts[agts_cnt];
+    compile_aggregators(agts, aggregators);
+
     // push folded result into return_value array.
     array_init(return_value);
     ZEND_HASH_FOREACH_VAL(Z_ARRVAL(groups), group) {
-      zval res = fold_rows(group, fields, aggregators);
+      zval res = fold_rows(group, fields, agts, agts_cnt);
       add_next_index_zval(return_value, &res);
     } ZEND_HASH_FOREACH_END();
     zval_dtor(&groups);
