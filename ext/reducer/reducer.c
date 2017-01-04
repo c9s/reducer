@@ -69,13 +69,13 @@ PHP_MINIT_FUNCTION(reducer)
 {
     // ZEND_INIT_MODULE_GLOBALS(reducer, php_reducer_init_globals, NULL);
     REGISTER_INI_ENTRIES();
-    REGISTER_LONG_CONSTANT("REDUCER_SUM"   , REDUCER_SUM   , CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("REDUCER_AVG"   , REDUCER_AVG   , CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("REDUCER_COUNT" , REDUCER_COUNT , CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("REDUCER_FIRST" , REDUCER_FIRST , CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("REDUCER_LAST"  , REDUCER_LAST , CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("REDUCER_MIN"  , REDUCER_MIN , CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("REDUCER_MAX"  , REDUCER_MAX , CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("REDUCER_AGGR_SUM"   , REDUCER_AGGR_SUM   , CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("REDUCER_AGGR_AVG"   , REDUCER_AGGR_AVG   , CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("REDUCER_AGGR_COUNT" , REDUCER_AGGR_COUNT , CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("REDUCER_AGGR_FIRST" , REDUCER_AGGR_FIRST , CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("REDUCER_AGGR_LAST"  , REDUCER_AGGR_LAST , CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("REDUCER_AGGR_MIN"  , REDUCER_AGGR_MIN , CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("REDUCER_AGGR_MAX"  , REDUCER_AGGR_MAX , CONST_CS | CONST_PERSISTENT);
     return SUCCESS;
 }
 
@@ -286,7 +286,7 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
         } else if (Z_TYPE_P(current_agt->type) == IS_LONG) {
 
             switch (Z_LVAL_P(current_agt->type)) {
-              case REDUCER_MIN:
+              case REDUCER_AGGR_MIN:
                   if ((Z_TYPE_P(current_val) != IS_LONG && Z_TYPE_P(current_val) != IS_DOUBLE)) {
                       continue;
                   }
@@ -311,7 +311,7 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
                       }
                   }
                   break;
-              case REDUCER_MAX:
+              case REDUCER_AGGR_MAX:
                   if ((Z_TYPE_P(current_val) != IS_LONG && Z_TYPE_P(current_val) != IS_DOUBLE)) {
                       continue;
                   }
@@ -335,8 +335,8 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
                       }
                   }
                   break;
-              case REDUCER_AVG:
-              case REDUCER_SUM:
+              case REDUCER_AGGR_AVG:
+              case REDUCER_AGGR_SUM:
                   if ((Z_TYPE_P(current_val) != IS_LONG && Z_TYPE_P(current_val) != IS_DOUBLE)) {
                       continue;
                   }
@@ -356,7 +356,7 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
                       }
                   }
                   break;
-              case REDUCER_COUNT:
+              case REDUCER_AGGR_COUNT:
                   if (carry_val == NULL) {
                       zval tmp;
                       ZVAL_LONG(&tmp, 0);
@@ -365,10 +365,10 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
                       Z_LVAL_P(carry_val)++;
                   }
                   break;
-              case REDUCER_LAST:
+              case REDUCER_AGGR_LAST:
                   carry_val = REDUCER_HASH_UPDATE(result_ht, current_agt->num_alias, current_agt->alias, current_val);
                   break;
-              case REDUCER_FIRST:
+              case REDUCER_AGGR_FIRST:
                   if (carry_val == NULL) {
                       carry_val = REDUCER_HASH_ADD_NEW(result_ht, current_agt->num_alias, current_agt->alias, current_val);
                   }
@@ -386,7 +386,7 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
           carry_val = REDUCER_HASH_FIND(result_ht, current_agt->num_alias, current_agt->alias);
           if (carry_val != NULL) {
               switch (Z_LVAL_P(current_agt->type)) {
-                  case REDUCER_AVG:
+                  case REDUCER_AGGR_AVG:
                       convert_to_double(carry_val);
                       Z_DVAL_P(carry_val) /= cnt;
                   break;

@@ -23,13 +23,13 @@ extern zend_module_entry reducer_module_entry;
 
 #define PHP_REDUCER_VERSION "0.9.3"
 
-#define REDUCER_COUNT             2               
-#define REDUCER_FIRST             3
-#define REDUCER_LAST              4
-#define REDUCER_AVG               5
-#define REDUCER_SUM               6
-#define REDUCER_MIN               7
-#define REDUCER_MAX               8
+#define REDUCER_AGGR_COUNT             2               
+#define REDUCER_AGGR_FIRST             3
+#define REDUCER_AGGR_LAST              4
+#define REDUCER_AGGR_AVG               5
+#define REDUCER_AGGR_SUM               6
+#define REDUCER_AGGR_MIN               7
+#define REDUCER_AGGR_MAX               8
 
 // #define REDUCER_ASC 2
 

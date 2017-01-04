@@ -13,7 +13,7 @@ $rows = [
     [ 'category' => 'Drink', 'amount' => 8 ],
 ];
 $ret = group_by($rows, ['category'], [
-    'amount' => REDUCER_MAX,
+    'amount' => REDUCER_AGGR_MAX,
 ]);
 print_r($ret);
 --EXPECT--

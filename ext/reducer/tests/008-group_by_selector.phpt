@@ -15,7 +15,7 @@ $rows = [
 $ret = group_by($rows, ['category','type'], [
     'total_amount' => [
         'selector' => 'amount',
-        'aggregator' => REDUCER_SUM,
+        'aggregator' => REDUCER_AGGR_SUM,
     ]
 ]);
 print_r($ret);

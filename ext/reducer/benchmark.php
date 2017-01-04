@@ -21,7 +21,7 @@ for ($i = 0; $i < $N; $i++) {
 echo "Reducing...\n";
 $start = microtime(true);
 $result = group_by($rows, ['category'], [
-    'amount' => REDUCER_SUM,
+    'amount' => REDUCER_AGGR_SUM,
 ]);
 
 echo number_format($N), " rows\n";

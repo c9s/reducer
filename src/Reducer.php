@@ -20,7 +20,7 @@ class Reducer {
                 $current = isset($row[$key]) ? $row[$key] : null;
                 $carry = isset($result[$key]) ? $result[$key] : null;
                 switch ($agg) {
-                case REDUCER_SUM:
+                case REDUCER_AGGR_SUM:
                     if ($carry) {
                         $carry += $current;
                     } else {
@@ -75,8 +75,8 @@ class Reducer {
 
 
 if (!extension_loaded('reducer')) {
-    define('REDUCER_SUM', 1);
-    define('REDUCER_COUNT', 2);
+    define('REDUCER_AGGR_SUM', 1);
+    define('REDUCER_AGGR_COUNT', 2);
     function group_by($rows, $fields, $aggregators) {
         return Reducer::groupBy($rows, $fields, $aggregators);
     }
@@ -93,8 +93,8 @@ $ret = group_by([
     [ 'category' => 'Drink', 'amount' => 5 ],
     [ 'category' => 'Drink', 'amount' => 8 ],
 ], ['category'], [
-    'amount' => REDUCER_SUM,
-    'cnt' => REDUCER_COUNT,
+    'amount' => REDUCER_AGGR_SUM,
+    'cnt' => REDUCER_AGGR_COUNT,
 ]);
 print_r($ret);
 */

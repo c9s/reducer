@@ -27,9 +27,9 @@ $rows = group_by([
 ], ['category','type'], [
     'total_amount' => [
         'selector' => 'amount',
-        'aggregator' => REDUCER_SUM,
+        'aggregator' => REDUCER_AGGR_SUM,
     ],
-    'cnt' => REDUCER_COUNT,
+    'cnt' => REDUCER_AGGR_COUNT,
 ]);
 print_r($ret);
 ```
@@ -50,13 +50,13 @@ Aggregator definition syntax
 
 ### Built-in Aggregators
 
-- `REDUCER_SUM`
-- `REDUCER_COUNT`
-- `REDUCER_MIN`
-- `REDUCER_MAX`
-- `REDUCER_AVG`
-- `REDUCER_FIRST`
-- `REDUCER_LAST`
+- `REDUCER_AGGR_SUM`
+- `REDUCER_AGGR_COUNT`
+- `REDUCER_AGGR_MIN`
+- `REDUCER_AGGR_MAX`
+- `REDUCER_AGGR_AVG`
+- `REDUCER_AGGR_FIRST`
+- `REDUCER_AGGR_LAST`
 
 ### Aggregating data with custom user function
 

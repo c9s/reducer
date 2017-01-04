@@ -12,7 +12,7 @@ $ret = group_by([
     [ 'category' => 'Drink', 'amount' => 5 ],
     [ 'category' => 'Drink', 'amount' => 8 ],
 ], ['category'], [
-    'amount' => REDUCER_SUM,
+    'amount' => REDUCER_AGGR_SUM,
 ]);
 print_r($ret);
 --EXPECT--

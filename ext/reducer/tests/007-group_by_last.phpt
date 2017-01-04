@@ -13,8 +13,8 @@ $rows = [
     [ 'name' => 'Jobs',  'category' => 'Drink', 'amount' => 8 ],
 ];
 $ret = group_by($rows, ['category'], [
-    'name' => REDUCER_LAST,
-    'amount' => REDUCER_MAX,
+    'name' => REDUCER_AGGR_LAST,
+    'amount' => REDUCER_AGGR_MAX,
 ]);
 print_r($ret);
 --EXPECT--

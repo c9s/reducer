@@ -13,7 +13,7 @@ for ($i = 0; $i < 100000; $i++) {
     ];
 }
 $result = group_by($rows, ['category'], [
-    'amount' => REDUCER_SUM,
+    'amount' => REDUCER_AGGR_SUM,
 ]);
 
 $bytes = memory_get_peak_usage(false);
