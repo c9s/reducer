@@ -375,6 +375,16 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
                       carry_val = REDUCER_HASH_ADD_NEW(result_ht, current_agt->num_alias, current_agt->alias, current_val);
                   }
                   break;
+              case REDUCER_AGGR_GROUP:
+                  if (carry_val == NULL) {
+                      zval group;
+                      array_init(&group);
+                      add_next_index_zval(&group, current_val);
+                      carry_val = REDUCER_HASH_ADD_NEW(result_ht, current_agt->num_alias, current_agt->alias, &group);
+                  } else {
+                      add_next_index_zval(carry_val, current_val);
+                  }
+                  break;
             }
         }
     }
