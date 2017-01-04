@@ -455,15 +455,17 @@ zval group_groups(zval* groups, zval* fields TSRMLS_DC) {
                 Z_ADDREF_P(tmp_group);
                 add_next_index_zval(&tmp_collection, tmp_group);
             } ZEND_HASH_FOREACH_END();
-            zval_dtor(&tmp_groups);
+            zval_ptr_dtor(&tmp_groups);
 
         } ZEND_HASH_FOREACH_END();
 
-        zval_dtor(groups); // destruct the previous groups array.
+        zval_ptr_dtor(groups); // destruct the previous groups array.
+
         ZVAL_COPY(groups, &tmp_collection);
 
+
         // destruct tmp_collection after copying the array.
-        zval_dtor(&tmp_collection);
+        zval_ptr_dtor(&tmp_collection);
 
     } ZEND_HASH_FOREACH_END();
 
@@ -494,8 +496,11 @@ PHP_FUNCTION(fold_rows)
     compile_aggregators(agts, aggregators);
 
     zval result = fold_rows(rows, fields, agts, agts_cnt);
+    RETVAL_ZVAL(&result, 1, 1);
+    /*
     ZVAL_COPY(return_value, &result);
     zval_dtor(&result);
+    */
 }
 
 PHP_FUNCTION(group_by)
@@ -517,5 +522,5 @@ PHP_FUNCTION(group_by)
       zval res = fold_rows(group, fields, agts, agts_cnt);
       add_next_index_zval(return_value, &res);
     } ZEND_HASH_FOREACH_END();
-    zval_dtor(&groups);
+    zval_ptr_dtor(&groups);
 }
