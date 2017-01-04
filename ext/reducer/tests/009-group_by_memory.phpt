@@ -2,7 +2,7 @@
 group_by memory test
 --FILE--
 <?php
-ini_set('memory_limit', '512M');
+ini_set('memory_limit', '1024M');
 
 $init = memory_get_usage();
 $rows = [
