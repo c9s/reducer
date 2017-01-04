@@ -5,7 +5,7 @@ php:
 - 7.1
 
 env:
-- NO_INTERACTION=1
+- NO_INTERACTION=1 REPORT_EXIT_STATUS=1
 
 compiler:
 - gcc
