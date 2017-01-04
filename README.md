@@ -89,7 +89,7 @@ $result = group_by($rows, ['category','type'], [
 
 ```
 $ phpize
-$ ./configure
+$ ./configure --enable-reducer
 $ make install
 ```
 
