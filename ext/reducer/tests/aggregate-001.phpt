@@ -1,8 +1,8 @@
 --TEST--
-fold_rows
+aggregate
 --FILE--
 <?php
-$ret = fold_rows([ 
+$ret = aggregate([ 
     [ 'category' => 'Food', 'type' => 'pasta', 0 => 1, 'foo' => 10 ],
     [ 'category' => 'Food', 'type' => 'pasta', 0 => 1 ],
     [ 'category' => 'Food', 'type' => 'juice', 0 => 1 ],

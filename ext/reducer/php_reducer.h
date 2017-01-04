@@ -38,7 +38,7 @@ PHP_RSHUTDOWN_FUNCTION(reducer);
 PHP_MINFO_FUNCTION(reducer);
 
 PHP_FUNCTION(group_by);
-PHP_FUNCTION(fold_rows);
+PHP_FUNCTION(aggregate);
 
 ZEND_BEGIN_MODULE_GLOBALS(reducer)
 

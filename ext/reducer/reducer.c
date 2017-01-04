@@ -13,7 +13,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_group_by, 0, 0, 1)
   ZEND_ARG_INFO(0, aggregators)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_fold_rows, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_aggregate, 0, 0, 1)
   ZEND_ARG_INFO(0, array)
   ZEND_ARG_INFO(0, fields)
   ZEND_ARG_INFO(0, aggregators)
@@ -21,7 +21,7 @@ ZEND_END_ARG_INFO()
 
 static const zend_function_entry reducer_functions[] = {
   PHP_FE(group_by,  arginfo_group_by)
-  PHP_FE(fold_rows,  arginfo_fold_rows)
+  PHP_FE(aggregate,  arginfo_aggregate)
   PHP_FE_END
 };
 
@@ -205,7 +205,7 @@ void compile_aggregators(compiled_agt *agts, zval *aggregators) {
 }
 
 
-zval fold_rows(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
+zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
 {
   zval result, *row, *carry_val, *current_val, *first, *field, *tmp;
   ulong num_alias, num_selector;
@@ -484,7 +484,7 @@ zval group_rows(zval* rows, zval* fields TSRMLS_DC) {
     return group_groups(&groups, fields TSRMLS_CC);
 }
 
-PHP_FUNCTION(fold_rows)
+PHP_FUNCTION(aggregate)
 {
     zval *rows, *fields, *aggregators;
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "aaa", &rows, &fields, &aggregators) == FAILURE) {
@@ -495,7 +495,7 @@ PHP_FUNCTION(fold_rows)
     compiled_agt agts[agts_cnt];
     compile_aggregators(agts, aggregators);
 
-    zval result = fold_rows(rows, fields, agts, agts_cnt);
+    zval result = aggregate(rows, fields, agts, agts_cnt);
     RETVAL_ZVAL(&result, 1, 1);
 }
 
@@ -515,7 +515,7 @@ PHP_FUNCTION(group_by)
     // push folded result into return_value array.
     array_init(return_value);
     ZEND_HASH_FOREACH_VAL(Z_ARRVAL(groups), group) {
-      zval res = fold_rows(group, fields, agts, agts_cnt);
+      zval res = aggregate(group, fields, agts, agts_cnt);
       add_next_index_zval(return_value, &res);
     } ZEND_HASH_FOREACH_END();
     zval_ptr_dtor(&groups);
