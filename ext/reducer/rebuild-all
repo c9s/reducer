@@ -1,0 +1,2 @@
+#!/bin/bash
+phpize --clean && phpize && ./configure --enable-reducer && make && make test
