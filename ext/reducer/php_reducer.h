@@ -58,7 +58,7 @@ typedef struct _aggregator {
   ulong num_selector;
 
   zend_bool is_callable;
-  zval *agg_type; // could be a constant or a function call.
+  zval *type; // could be a constant or a function call.
   zend_fcall_info fci;
   zend_fcall_info_cache fci_cache;
 

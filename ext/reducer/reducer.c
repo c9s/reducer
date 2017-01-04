@@ -99,20 +99,20 @@ PHP_MINFO_FUNCTION(reducer)
     DISPLAY_INI_ENTRIES();
 }
 
-void compile_aggregator(compiled_agt *current_agt, zval *agg_type) {
-    if (Z_TYPE_P(agg_type) == IS_LONG) {
+void compile_aggregator(compiled_agt *current_agt, zval *type) {
+    if (Z_TYPE_P(type) == IS_LONG) {
         current_agt->is_callable = 0;
-        current_agt->agg_type = agg_type;
-    } else if (zend_is_callable(agg_type, IS_CALLABLE_CHECK_NO_ACCESS, NULL)) {
+        current_agt->type = type;
+    } else if (zend_is_callable(type, IS_CALLABLE_CHECK_NO_ACCESS, NULL)) {
         current_agt->is_callable = 1;
-        current_agt->agg_type = agg_type;
+        current_agt->type = type;
 
         // fetch fci
         current_agt->fci = empty_fcall_info;
         current_agt->fci_cache = empty_fcall_info_cache;
 
         char *errstr = NULL;
-        if (zend_fcall_info_init(agg_type, 0, &current_agt->fci, &current_agt->fci_cache, NULL, &errstr) == FAILURE) {
+        if (zend_fcall_info_init(type, 0, &current_agt->fci, &current_agt->fci_cache, NULL, &errstr) == FAILURE) {
             php_error_docref(NULL, E_USER_ERROR, "Error setting converter callback: %s", errstr);
         }
         if (errstr) {
@@ -232,7 +232,7 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
 
       for (agt_idx = 0; agt_idx < agts_cnt ; agt_idx++) {
           current_agt = &agts[agt_idx];
-          if (Z_TYPE_P(current_agt->agg_type) == IS_LONG) {
+          if (Z_TYPE_P(current_agt->type) == IS_LONG) {
               carry_val = REDUCER_HASH_FIND(result_ht, current_agt->num_alias, current_agt->alias);
           }
       }
@@ -283,9 +283,9 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
             zval_ptr_dtor(&args[0]);
             zval_ptr_dtor(&args[1]);
 
-        } else if (Z_TYPE_P(current_agt->agg_type) == IS_LONG) {
+        } else if (Z_TYPE_P(current_agt->type) == IS_LONG) {
 
-            switch (Z_LVAL_P(current_agt->agg_type)) {
+            switch (Z_LVAL_P(current_agt->type)) {
               case REDUCER_MIN:
                   if ((Z_TYPE_P(current_val) != IS_LONG && Z_TYPE_P(current_val) != IS_DOUBLE)) {
                       continue;
@@ -382,10 +382,10 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
 
   for (agt_idx = 0; agt_idx < agts_cnt ; agt_idx++) {
       current_agt = &agts[agt_idx];
-      if (Z_TYPE_P(current_agt->agg_type) == IS_LONG) {
+      if (Z_TYPE_P(current_agt->type) == IS_LONG) {
           carry_val = REDUCER_HASH_FIND(result_ht, current_agt->num_alias, current_agt->alias);
           if (carry_val != NULL) {
-              switch (Z_LVAL_P(current_agt->agg_type)) {
+              switch (Z_LVAL_P(current_agt->type)) {
                   case REDUCER_AVG:
                       convert_to_double(carry_val);
                       Z_DVAL_P(carry_val) /= cnt;
