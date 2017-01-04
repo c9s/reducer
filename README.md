@@ -53,6 +53,8 @@ Aggregator definition syntax
 - `REDUCER_MIN`
 - `REDUCER_MAX`
 - `REDUCER_AVG`
+- `REDUCER_FIRST`
+- `REDUCER_LAST`
 
 ### Aggregating data with custom user function
 
