@@ -201,6 +201,10 @@ void compile_aggregators(compiled_agt *agts, zval *aggregators) {
 zval fold_rows(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
 {
   zval result, *row, *carry_val, *current_val, *first, *field, *tmp;
+  ulong num_alias, num_selector;
+  zend_string *selector, *alias;
+
+  uint agt_idx;
   compiled_agt *current_agt;
 
   array_init(&result);
@@ -220,10 +224,6 @@ zval fold_rows(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
   }
 
 
-  zval *aggregator, *agg_type;
-  ulong num_alias, num_selector;
-  uint agt_idx;
-  zend_string *selector, *alias;
 
 
 
