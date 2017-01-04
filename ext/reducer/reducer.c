@@ -129,8 +129,6 @@ void compile_aggregators(compiled_agt *agts, zval *aggregators) {
 
   ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(aggregators), num_alias, alias, aggregator) {
       current_agt = &agts[agt_idx++];
-      current_agt->alias = NULL;
-      current_agt->selector = NULL;
 
       if (Z_TYPE_P(aggregator) == IS_LONG) {
 
@@ -140,6 +138,8 @@ void compile_aggregators(compiled_agt *agts, zval *aggregators) {
               current_agt->alias = alias;
               current_agt->selector = alias;
           } else {
+              current_agt->alias = NULL;
+              current_agt->selector = NULL;
               current_agt->num_alias = num_alias;
               current_agt->num_selector = num_alias;
           }
@@ -170,6 +170,7 @@ void compile_aggregators(compiled_agt *agts, zval *aggregators) {
           if (alias) {
               current_agt->alias = alias;
           } else {
+              current_agt->alias = NULL;
               current_agt->num_alias = num_alias;
           }
 
@@ -186,6 +187,7 @@ void compile_aggregators(compiled_agt *agts, zval *aggregators) {
             if (alias) {
                 current_agt->selector = alias;
             } else {
+                current_agt->selector = NULL;
                 current_agt->num_selector = num_alias;
             }
 
