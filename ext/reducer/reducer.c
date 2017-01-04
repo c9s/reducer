@@ -452,7 +452,7 @@ zval group_groups(zval* groups, zval* fields TSRMLS_DC) {
 
             zval tmp_groups = group_items(group, Z_STR_P(field));
             ZEND_HASH_FOREACH_VAL(Z_ARRVAL(tmp_groups), tmp_group) {
-                zval_add_ref(tmp_group);
+                Z_ADDREF_P(tmp_group);
                 add_next_index_zval(&tmp_collection, tmp_group);
             } ZEND_HASH_FOREACH_END();
             zval_dtor(&tmp_groups);
