@@ -398,7 +398,6 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
 }
 
 
-#define GROUP_INIT_SIZE 16
 
 zval group_items(zval* rows, zend_string* field)
 {
