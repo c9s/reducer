@@ -8,7 +8,9 @@ map and reduce functions implemented in PHP extension.
 
 ## Current Status
 
-0.9.3 - Stable (API unstable)
+- Version: 0.9.3
+- Quality: stable
+- API: alpha
 
 ## Synopsis
 
