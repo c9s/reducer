@@ -13,7 +13,6 @@ $ret = fold_rows([
     [ 'category' => 'Book', 'type' => 'cooking', 0 => 2 ],
 ], ['category','type'], [
     0 => REDUCER_SUM,
-    1 => REDUCER_COUNT,
 ]);
 print_r($ret);
 --EXPECT--
@@ -22,5 +21,4 @@ Array
     [category] => Food
     [type] => pasta
     [0] => 19
-    [1] => 7
 )

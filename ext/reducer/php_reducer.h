@@ -50,5 +50,19 @@ ZEND_TSRMLS_CACHE_EXTERN()
 
 // #define IF_G(v) ZEND_MODULE_GLOBALS_ACCESSOR(reducer, v)
 
+typedef struct _aggregator {
+
+  zend_string *alias;
+  zend_string *selector;
+  ulong num_alias;
+  ulong num_selector;
+
+  zend_bool is_callable;
+  zval *agg_type; // could be a constant or a function call.
+  zend_fcall_info fci;
+  zend_fcall_info_cache fci_cache;
+
+} compiled_agt;
+
 
 #endif

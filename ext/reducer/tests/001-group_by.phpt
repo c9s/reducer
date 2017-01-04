@@ -13,7 +13,6 @@ $ret = group_by([
     [ 'category' => 'Drink', 'amount' => 8 ],
 ], ['category'], [
     'amount' => REDUCER_SUM,
-    'cnt' => REDUCER_COUNT,
 ]);
 print_r($ret);
 --EXPECT--
@@ -23,21 +22,18 @@ Array
         (
             [category] => Food
             [amount] => 3
-            [cnt] => 2
         )
 
     [1] => Array
         (
             [category] => Book
             [amount] => 11
-            [cnt] => 1
         )
 
     [2] => Array
         (
             [category] => Drink
             [amount] => 16
-            [cnt] => 2
         )
 
 )

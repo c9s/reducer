@@ -13,7 +13,6 @@ $ret = group_by([
     [ 'category' => 'Book', 'type' => 'cooking', 'amount' => 2 ],
 ], ['category','type'], [
     'amount' => REDUCER_SUM,
-    'cnt' => REDUCER_COUNT,
 ]);
 print_r($ret);
 --EXPECT--
@@ -24,7 +23,6 @@ Array
             [category] => Food
             [type] => pasta
             [amount] => 2
-            [cnt] => 1
         )
 
     [1] => Array
@@ -32,7 +30,6 @@ Array
             [category] => Food
             [type] => juice
             [amount] => 2
-            [cnt] => 1
         )
 
     [2] => Array
@@ -40,7 +37,6 @@ Array
             [category] => Book
             [type] => programming
             [amount] => 7
-            [cnt] => 1
         )
 
     [3] => Array
@@ -48,7 +44,6 @@ Array
             [category] => Book
             [type] => cooking
             [amount] => 8
-            [cnt] => 1
         )
 
 )
