@@ -13,7 +13,9 @@
 
 extern zend_module_entry reducer_module_entry;
 
-#define phpext_reducer_ptr &filter_module_entry
+#define GROUP_INIT_SIZE 16
+
+#define phpext_reducer_ptr &reducer_module_entry
 
 #ifdef ZTS
 #include "TSRM.h"

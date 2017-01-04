@@ -398,6 +398,8 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
 }
 
 
+#define GROUP_INIT_SIZE 16
+
 zval group_items(zval* rows, zend_string* field)
 {
     zval *row, *row_key, *group, groups_array;
@@ -413,7 +415,7 @@ zval group_items(zval* rows, zend_string* field)
                 if ((group = zend_hash_find(groups_ht, Z_STR_P(row_key))) == NULL) {
                     // Allocate a new group array
                     zval new_group;
-                    array_init(&new_group);
+                    array_init_size(&new_group, GROUP_INIT_SIZE);
 
                     // Set the group array into the groups array.
                     group = zend_hash_update(groups_ht, Z_STR_P(row_key), &new_group);
@@ -422,7 +424,7 @@ zval group_items(zval* rows, zend_string* field)
                 if ((group = zend_hash_index_find(groups_ht, Z_LVAL_P(row_key))) == NULL) {
                     // Allocate a new group array
                     zval new_group;
-                    array_init(&new_group);
+                    array_init_size(&new_group, GROUP_INIT_SIZE);
 
                     // Set the group array into the groups array.
                     group = zend_hash_index_update(groups_ht, Z_LVAL_P(row_key), &new_group);
