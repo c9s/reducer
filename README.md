@@ -57,6 +57,7 @@ Aggregator definition syntax
 - `REDUCER_AGGR_AVG`
 - `REDUCER_AGGR_FIRST`
 - `REDUCER_AGGR_LAST`
+- `REDUCER_AGGR_GROUP`
 
 ### Aggregating data with custom user function
 
