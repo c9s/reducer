@@ -2,6 +2,8 @@
 group_by memory test
 --FILE--
 <?php
+ini_set('memory_limit', '512M');
+
 $init = memory_get_usage();
 $rows = [
     [ 'category' => 'Food', 'type' => 'pasta', 'amount' => 1, 'foo' => 10 ],
