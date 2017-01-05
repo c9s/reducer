@@ -239,18 +239,13 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
 
       } ZEND_HASH_FOREACH_END();
 
-
       for (agt_idx = 0; agt_idx < agts_cnt ; agt_idx++) {
           current_agt = &agts[agt_idx];
           if (Z_TYPE_P(current_agt->type) == IS_LONG) {
               carry_val = REDUCER_HASH_FIND(result_ht, current_agt->num_alias, current_agt->alias);
           }
       }
-
   }
-
-
-
 
   // Iterate the rows and aggregate the result.
   ZEND_HASH_FOREACH_VAL(ht, row) {

@@ -1,7 +1,7 @@
 reducer
 =======
 
-map and reduce functions implemented in PHP extension.
+map and reduce functions for large array (1M+ rows) in PHP7 extension.
 
 [![Build Status](https://travis-ci.org/c9s/reducer.svg)](https://travis-ci.org/c9s/reducer)
 ![PHP 7 ready](http://php7ready.timesplinter.ch/Codeception/Codeception/badge.svg)
@@ -15,7 +15,8 @@ map and reduce functions implemented in PHP extension.
 ## Synopsis
 
 ```php
-$rows = group_by([ 
+
+$rows = [
     [ 'category' => 'Food', 'type' => 'pasta', 'amount' => 1, 'foo' => 10 ],
     [ 'category' => 'Food', 'type' => 'pasta', 'amount' => 1 ],
     [ 'category' => 'Food', 'type' => 'juice', 'amount' => 1 ],
@@ -24,14 +25,21 @@ $rows = group_by([
     [ 'category' => 'Book', 'type' => 'programming', 'amount' => 2 ],
     [ 'category' => 'Book', 'type' => 'cooking', 'amount' => 6 ],
     [ 'category' => 'Book', 'type' => 'cooking', 'amount' => 2 ],
-], ['category','type'], [
+];
+$result = group_by($rows, ['category','type'], [
     'total_amount' => [
         'selector' => 'amount',
         'aggregator' => REDUCER_AGGR_SUM,
     ],
     'cnt' => REDUCER_AGGR_COUNT,
 ]);
-print_r($ret);
+print_r($result);
+```
+
+The equivaient SQL query:
+
+```sql
+SELECT SUM(amount) as total_amount, COUNT(*) as cnt FROM table;
 ```
 
 ## Aggregators
