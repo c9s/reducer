@@ -42,9 +42,18 @@ The equivaient SQL query:
 SELECT SUM(amount) as total_amount, COUNT(*) as cnt FROM table;
 ```
 
+## How Does It Work?
+
+The `group_by` function compiles the aggregator definition into a plain C
+structure object for optimizing the aggregator iteration speed. (instead of
+iterating PHP asssoc array in pure PHP).
+
+It then groups the rows by the given fields. Finally, use the compiled aggregators 
+to aggregate the result.
+
 ## Aggregators
 
-Aggregator definition syntax
+Here is the syntax for defining aggregators:
 
 ```php
 [
