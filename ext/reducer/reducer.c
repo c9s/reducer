@@ -226,9 +226,17 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
 
   if ((first = zend_hash_get_current_data(ht)) != NULL) {
       ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(fields), field) {
-          if ((carry_val = zend_hash_find(Z_ARRVAL_P(first), Z_STR_P(field))) != NULL) {
-              zend_hash_add_new(result_ht, Z_STR_P(field), carry_val);
+
+          if (Z_TYPE_P(field) == IS_STRING) {
+              if ((carry_val = zend_hash_find(Z_ARRVAL_P(first), Z_STR_P(field))) != NULL) {
+                  zend_hash_add_new(result_ht, Z_STR_P(field), carry_val);
+              }
+          } else {
+              if ((carry_val = zend_hash_index_find(Z_ARRVAL_P(first), Z_LVAP_P(field))) != NULL) {
+                  zend_hash_add_new(result_ht, Z_LVAP_P(field), carry_val);
+              }
           }
+
       } ZEND_HASH_FOREACH_END();
 
 
