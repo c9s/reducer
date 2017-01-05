@@ -6,6 +6,12 @@ map and reduce functions for large array (1M+ rows) in PHP7 extension.
 [![Build Status](https://travis-ci.org/c9s/reducer.svg)](https://travis-ci.org/c9s/reducer)
 ![PHP 7 ready](http://php7ready.timesplinter.ch/Codeception/Codeception/badge.svg)
 
+## Scenario
+
+After quering N+ dataset from multiple data source (relational database like
+mysql, pgsql, or no-sql database like mongodb) you can efficiently aggregate the
+data sets in the PHP runtime from the client side.
+
 ## Current Status
 
 - Version: 0.9.3
