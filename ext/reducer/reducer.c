@@ -232,8 +232,8 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
                   zend_hash_add_new(result_ht, Z_STR_P(field), carry_val);
               }
           } else {
-              if ((carry_val = zend_hash_index_find(Z_ARRVAL_P(first), Z_LVAP_P(field))) != NULL) {
-                  zend_hash_add_new(result_ht, Z_LVAP_P(field), carry_val);
+              if ((carry_val = zend_hash_index_find(Z_ARRVAL_P(first), Z_LVAL_P(field))) != NULL) {
+                  zend_hash_index_add_new(result_ht, Z_LVAL_P(field), carry_val);
               }
           }
 
@@ -421,7 +421,7 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
 
 zval group_items(zval* rows, zend_string* field)
 {
-    zval *row, *row_key, *group, groups_array;
+    zval *row, *category_key, *group, groups_array;
     HashTable * groups_ht;
 
     // Allocate the group array for the current aggregation
@@ -429,24 +429,24 @@ zval group_items(zval* rows, zend_string* field)
     groups_ht = Z_ARRVAL(groups_array);
 
     ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(rows), row) {
-        if ((row_key = zend_hash_find(Z_ARRVAL_P(row), field)) != NULL) {
-            if (Z_TYPE_P(row_key) == IS_STRING) {
-                if ((group = zend_hash_find(groups_ht, Z_STR_P(row_key))) == NULL) {
+        if ((category_key = zend_hash_find(Z_ARRVAL_P(row), field)) != NULL) {
+            if (Z_TYPE_P(category_key) == IS_STRING) {
+                if ((group = zend_hash_find(groups_ht, Z_STR_P(category_key))) == NULL) {
                     // Allocate a new group array
                     zval new_group;
                     array_init_size(&new_group, GROUP_INIT_SIZE);
 
                     // Set the group array into the groups array.
-                    group = zend_hash_update(groups_ht, Z_STR_P(row_key), &new_group);
+                    group = zend_hash_update(groups_ht, Z_STR_P(category_key), &new_group);
                 }
-            } else if (Z_TYPE_P(row_key) == IS_LONG) {
-                if ((group = zend_hash_index_find(groups_ht, Z_LVAL_P(row_key))) == NULL) {
+            } else if (Z_TYPE_P(category_key) == IS_LONG) {
+                if ((group = zend_hash_index_find(groups_ht, Z_LVAL_P(category_key))) == NULL) {
                     // Allocate a new group array
                     zval new_group;
                     array_init_size(&new_group, GROUP_INIT_SIZE);
 
                     // Set the group array into the groups array.
-                    group = zend_hash_index_update(groups_ht, Z_LVAL_P(row_key), &new_group);
+                    group = zend_hash_index_update(groups_ht, Z_LVAL_P(category_key), &new_group);
                 }
             }
 
