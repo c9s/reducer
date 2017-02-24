@@ -32,6 +32,11 @@ extern zend_module_entry reducer_module_entry;
 #define REDUCER_AGGR_MAX               8
 #define REDUCER_AGGR_GROUP             9
 
+#define REDUCER_TYPE_BOOL             1
+#define REDUCER_TYPE_LONG             2
+#define REDUCER_TYPE_DOUBLE           3
+#define REDUCER_TYPE_STRING           4
+
 PHP_MINIT_FUNCTION(reducer);
 PHP_MSHUTDOWN_FUNCTION(reducer);
 PHP_RINIT_FUNCTION(reducer);
@@ -59,6 +64,8 @@ typedef struct _aggregator {
   ulong num_selector;
 
   zend_bool is_callable;
+  unsigned char isa;
+
   zval *type; // could be a constant or a function call.
   zend_fcall_info fci;
   zend_fcall_info_cache fci_cache;

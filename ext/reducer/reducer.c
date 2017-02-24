@@ -69,6 +69,12 @@ PHP_MINIT_FUNCTION(reducer)
 {
     // ZEND_INIT_MODULE_GLOBALS(reducer, php_reducer_init_globals, NULL);
     REGISTER_INI_ENTRIES();
+
+    REGISTER_LONG_CONSTANT("REDUCER_TYPE_LONG"   , REDUCER_TYPE_LONG   , CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("REDUCER_TYPE_STRING"   , REDUCER_TYPE_STRING   , CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("REDUCER_TYPE_DOUBLE"   , REDUCER_TYPE_DOUBLE   , CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("REDUCER_TYPE_BOOL"   , REDUCER_TYPE_BOOL   , CONST_CS | CONST_PERSISTENT);
+
     REGISTER_LONG_CONSTANT("REDUCER_AGGR_SUM"   , REDUCER_AGGR_SUM   , CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("REDUCER_AGGR_AVG"   , REDUCER_AGGR_AVG   , CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("REDUCER_AGGR_COUNT" , REDUCER_AGGR_COUNT , CONST_CS | CONST_PERSISTENT);
@@ -101,7 +107,8 @@ PHP_MINFO_FUNCTION(reducer)
     DISPLAY_INI_ENTRIES();
 }
 
-void compile_aggregator(compiled_agt *current_agt, zval *type) {
+void compile_aggregator(compiled_agt *current_agt, zval *type)
+{
     if (Z_TYPE_P(type) == IS_LONG) {
         current_agt->is_callable = 0;
         current_agt->type = type;
@@ -127,7 +134,8 @@ void compile_aggregator(compiled_agt *current_agt, zval *type) {
     }
 }
 
-void compile_aggregators(compiled_agt *agts, zval *aggregators) {
+void compile_aggregators(compiled_agt *agts, zval *aggregators)
+{
   compiled_agt *current_agt;
   uint agt_idx = 0;
   ulong num_alias;
@@ -190,15 +198,22 @@ void compile_aggregators(compiled_agt *agts, zval *aggregators) {
                   current_agt->num_selector = Z_LVAL_P(tmp);
               }
           } else {
-
             if (alias) {
                 current_agt->selector = alias;
             } else {
                 current_agt->selector = NULL;
                 current_agt->num_selector = num_alias;
             }
-
           }
+
+          tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "isa", sizeof("isa")-1);
+          if (tmp) {
+            current_agt->isa = Z_LVAL_P(tmp);
+          } else {
+            current_agt->isa = REDUCER_TYPE_LONG;
+          }
+
+
       } else {
           php_error_docref(NULL, E_USER_ERROR, "Unsupported aggregator");
       }
@@ -343,7 +358,18 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
               case REDUCER_AGGR_AVG:
               case REDUCER_AGGR_SUM:
                   if ((Z_TYPE_P(current_val) != IS_LONG && Z_TYPE_P(current_val) != IS_DOUBLE)) {
-                      continue;
+                      switch (current_agt->isa) {
+                        case REDUCER_TYPE_LONG:
+                        convert_to_long(current_val);
+                        break;
+
+                        case REDUCER_TYPE_DOUBLE:
+                        convert_to_double(current_val);
+                        break;
+
+                        default:
+                        continue;
+                      }
                   }
                   if (carry_val == NULL) {
                       zval tmp;
