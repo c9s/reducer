@@ -73,7 +73,7 @@ PHP_MINIT_FUNCTION(reducer)
     REGISTER_LONG_CONSTANT("REDUCER_TYPE_LONG"   , REDUCER_TYPE_LONG   , CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("REDUCER_TYPE_STRING"   , REDUCER_TYPE_STRING   , CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("REDUCER_TYPE_DOUBLE"   , REDUCER_TYPE_DOUBLE   , CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("REDUCER_TYPE_BOOL"   , REDUCER_TYPE_BOOL   , CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("REDUCER_TYPE_BOOLEAN"   , REDUCER_TYPE_BOOLEAN   , CONST_CS | CONST_PERSISTENT);
 
     REGISTER_LONG_CONSTANT("REDUCER_AGGR_SUM"   , REDUCER_AGGR_SUM   , CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("REDUCER_AGGR_AVG"   , REDUCER_AGGR_AVG   , CONST_CS | CONST_PERSISTENT);
@@ -106,6 +106,33 @@ PHP_MINFO_FUNCTION(reducer)
     php_info_print_table_end();
     DISPLAY_INI_ENTRIES();
 }
+
+
+static zend_always_inline uint isa_cast(compiled_agt *agt, zval *val)
+{
+    if ((Z_TYPE_P(val) == IS_LONG && Z_TYPE_P(val) == IS_DOUBLE)) {
+      return 1;
+    }
+    switch (agt->isa) {
+      case REDUCER_TYPE_LONG:
+      convert_to_long(val);
+      return 1;
+
+      case REDUCER_TYPE_DOUBLE:
+      convert_to_double(val);
+      return 1;
+
+      case REDUCER_TYPE_BOOLEAN:
+      convert_to_boolean(val);
+      return 1;
+
+      default:
+      return 0;
+    }
+    return 1;
+}
+
+
 
 void compile_aggregator(compiled_agt *current_agt, zval *type)
 {
@@ -158,8 +185,10 @@ void compile_aggregators(compiled_agt *agts, zval *aggregators)
               current_agt->num_alias = num_alias;
               current_agt->num_selector = num_alias;
           }
-      } 
-      else if (zend_is_callable(aggregator, IS_CALLABLE_CHECK_NO_ACCESS, NULL)) {
+
+          current_agt->isa = REDUCER_TYPE_LONG;
+
+      } else if (zend_is_callable(aggregator, IS_CALLABLE_CHECK_NO_ACCESS, NULL)) {
 
           compile_aggregator(current_agt, aggregator);
 
@@ -173,6 +202,8 @@ void compile_aggregators(compiled_agt *agts, zval *aggregators)
               current_agt->num_selector = num_alias;
           }
 
+          current_agt->isa = REDUCER_TYPE_LONG;
+
       } else if (Z_TYPE_P(aggregator) == IS_ARRAY) {
 
           tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "aggregator", sizeof("aggregator") - 1);
@@ -180,6 +211,7 @@ void compile_aggregators(compiled_agt *agts, zval *aggregators)
               php_error_docref(NULL, E_USER_ERROR, "Aggregator is not defined.");
           }
           ZVAL_DEREF(tmp);
+
           compile_aggregator(current_agt, tmp);
 
           if (alias) {
@@ -208,7 +240,23 @@ void compile_aggregators(compiled_agt *agts, zval *aggregators)
 
           tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "isa", sizeof("isa")-1);
           if (tmp) {
-            current_agt->isa = Z_LVAL_P(tmp);
+
+            if (Z_TYPE_P(tmp) == IS_LONG) {
+
+              current_agt->isa = Z_LVAL_P(tmp);
+
+            } else if (Z_TYPE_P(tmp) == IS_STRING) {
+
+              if (strncasecmp(Z_STRVAL_P(tmp), "int", sizeof("int")-1) == 0) {
+                current_agt->isa = REDUCER_TYPE_LONG;
+              } else if (strncasecmp(Z_STRVAL_P(tmp), "double", sizeof("double")-1) == 0) {
+                current_agt->isa = REDUCER_TYPE_DOUBLE;
+              }
+
+            } else {
+              php_error_docref(NULL, E_USER_ERROR, "Unsupported aggregator data type.");
+            }
+
           } else {
             current_agt->isa = REDUCER_TYPE_LONG;
           }
@@ -246,14 +294,17 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
               if ((carry_val = zend_hash_find(Z_ARRVAL_P(first), Z_STR_P(field))) != NULL) {
                   zend_hash_add_new(result_ht, Z_STR_P(field), carry_val);
               }
-          } else {
+          } else if (Z_TYPE_P(field) == IS_LONG) {
               if ((carry_val = zend_hash_index_find(Z_ARRVAL_P(first), Z_LVAL_P(field))) != NULL) {
                   zend_hash_index_add_new(result_ht, Z_LVAL_P(field), carry_val);
               }
+          } else {
+              php_error_docref(NULL, E_USER_ERROR, "Unsupported field value type.");
           }
 
       } ZEND_HASH_FOREACH_END();
 
+      // TODO: Aggregate value from the first row.
       for (agt_idx = 0; agt_idx < agts_cnt ; agt_idx++) {
           current_agt = &agts[agt_idx];
           if (Z_TYPE_P(current_agt->type) == IS_LONG) {
@@ -307,10 +358,13 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
 
             switch (Z_LVAL_P(current_agt->type)) {
               case REDUCER_AGGR_MIN:
-                  if ((Z_TYPE_P(current_val) != IS_LONG && Z_TYPE_P(current_val) != IS_DOUBLE)) {
+
+                  if (isa_cast(current_agt, current_val) == 0) {
                       continue;
                   }
+
                   if (carry_val == NULL) {
+
                       zval tmp;
                       ZVAL_DEREF(current_val);
                       ZVAL_COPY(&tmp, current_val);
@@ -357,19 +411,8 @@ zval aggregate(zval* rows, zval* fields, compiled_agt* agts, uint agts_cnt)
                   break;
               case REDUCER_AGGR_AVG:
               case REDUCER_AGGR_SUM:
-                  if ((Z_TYPE_P(current_val) != IS_LONG && Z_TYPE_P(current_val) != IS_DOUBLE)) {
-                      switch (current_agt->isa) {
-                        case REDUCER_TYPE_LONG:
-                        convert_to_long(current_val);
-                        break;
-
-                        case REDUCER_TYPE_DOUBLE:
-                        convert_to_double(current_val);
-                        break;
-
-                        default:
-                        continue;
-                      }
+                  if (isa_cast(current_agt, current_val) == 0) {
+                      continue;
                   }
                   if (carry_val == NULL) {
                       zval tmp;

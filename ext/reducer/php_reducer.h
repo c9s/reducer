@@ -34,7 +34,7 @@ extern zend_module_entry reducer_module_entry;
 #define REDUCER_AGGR_GROUP             9
 
 
-#define REDUCER_TYPE_BOOL             1
+#define REDUCER_TYPE_BOOLEAN          1
 #define REDUCER_TYPE_LONG             T_LNUMBER
 #define REDUCER_TYPE_DOUBLE           T_DNUMBER
 #define REDUCER_TYPE_STRING           T_STRING
@@ -73,6 +73,5 @@ typedef struct _aggregator {
   zend_fcall_info_cache fci_cache;
 
 } compiled_agt;
-
 
 #endif
