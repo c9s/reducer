@@ -108,7 +108,7 @@ PHP_MINFO_FUNCTION(reducer)
 }
 
 
-static zend_always_inline uint isa_cast(compiled_agt *agt, zval *val)
+zend_always_inline static uint isa_cast(compiled_agt *agt, zval *val)
 {
     if ((Z_TYPE_P(val) == IS_LONG && Z_TYPE_P(val) == IS_DOUBLE)) {
       return 1;
@@ -132,139 +132,195 @@ static zend_always_inline uint isa_cast(compiled_agt *agt, zval *val)
     return 1;
 }
 
+zend_always_inline static void compile_aggregator_selector_default(compiled_agt *agt, zend_long num_alias, zend_string * alias)
+{
+    if (alias) {
+        agt->alias = alias;
+        agt->selector = alias;
+    } else {
+        agt->alias = NULL;
+        agt->selector = NULL;
+        agt->num_alias = num_alias;
+        agt->num_selector = num_alias;
+    }
+}
+
+zend_always_inline static void compile_aggregator_selector(compiled_agt *agt, zval * agt_def, zend_long num_alias, zend_string * alias)
+{
+    zval * sel = zend_hash_str_find(Z_ARRVAL_P(agt_def), "selector", sizeof("selector") -1);
+    if (sel) {
+        ZVAL_DEREF(sel);
+
+        if (Z_TYPE_P(sel) == IS_STRING) { 
+
+            agt->selector = Z_STR_P(sel);
+
+        } else if (Z_TYPE_P(sel) == IS_LONG) {
+
+            agt->num_selector = Z_LVAL_P(sel);
+
+        } else {
+
+            php_error_docref(NULL, E_USER_ERROR, "Invalid selector type.");
+
+        }
+
+        if (alias) {
+
+          agt->alias = alias;
+
+        } else {
+
+          agt->num_alias = num_alias;
+
+        }
 
 
-void compile_aggregator(compiled_agt *current_agt, zval *type)
+    } else {
+      if (alias) {
+
+          agt->selector = alias;
+          agt->alias = alias;
+
+      } else {
+
+          agt->selector = NULL;
+          agt->num_selector = num_alias;
+
+          agt->alias = NULL;
+          agt->num_alias = num_alias;
+
+      }
+    }
+}
+
+static zend_always_inline void compile_aggregator_isa(compiled_agt *agt, zval * agt_def)
+{
+  zval * isa = zend_hash_str_find(Z_ARRVAL_P(agt_def), "isa", sizeof("isa")-1);
+  if (!isa) {
+    agt->isa = REDUCER_TYPE_LONG;
+    return;
+  }
+
+  switch (Z_TYPE_P(isa)) {
+    case IS_LONG:
+      agt->isa = Z_LVAL_P(isa);
+      break;
+
+    case IS_STRING:
+      if (strncasecmp(Z_STRVAL_P(isa), "int", sizeof("int")-1) == 0) {
+        agt->isa = REDUCER_TYPE_LONG;
+      } else if (strncasecmp(Z_STRVAL_P(isa), "double", sizeof("double")-1) == 0) {
+        agt->isa = REDUCER_TYPE_DOUBLE;
+      } else if (strncasecmp(Z_STRVAL_P(isa), "boolean", sizeof("boolean")-1) == 0) {
+        agt->isa = REDUCER_TYPE_BOOLEAN;
+      } else {
+        php_error_docref(NULL, E_USER_ERROR, "Unsupported aggregator typename.");
+      }
+      break;
+
+    default:
+      php_error_docref(NULL, E_USER_ERROR, "Unsupported aggregator data type.");
+      break;
+  }
+}
+
+
+
+static zend_always_inline void compile_aggregator_constant(compiled_agt *agt, zval *type)
+{
+  agt->is_callable = 0;
+  agt->type = type;
+}
+
+static zend_always_inline void compile_aggregator_callable(compiled_agt *agt, zval *type)
+{
+    agt->is_callable = 1;
+    agt->type = type;
+
+    // fetch fci
+    agt->fci = empty_fcall_info;
+    agt->fci_cache = empty_fcall_info_cache;
+
+    char *errstr = NULL;
+    if (zend_fcall_info_init(type, 0, &agt->fci, &agt->fci_cache, NULL, &errstr) == FAILURE) {
+        php_error_docref(NULL, E_USER_ERROR, "Error setting converter callback: %s", errstr);
+    }
+    if (errstr) {
+        efree(errstr);
+    }
+
+    // shared fci configuration
+    agt->fci.param_count = 2;
+    agt->fci.no_separation = 0;
+}
+
+
+static zend_always_inline void compile_aggregator_function(compiled_agt *agt, zval *type)
 {
     if (Z_TYPE_P(type) == IS_LONG) {
-        current_agt->is_callable = 0;
-        current_agt->type = type;
+
+        compile_aggregator_constant(agt, type);
+
     } else if (zend_is_callable(type, IS_CALLABLE_CHECK_NO_ACCESS, NULL)) {
-        current_agt->is_callable = 1;
-        current_agt->type = type;
 
-        // fetch fci
-        current_agt->fci = empty_fcall_info;
-        current_agt->fci_cache = empty_fcall_info_cache;
+        compile_aggregator_callable(agt, type);
 
-        char *errstr = NULL;
-        if (zend_fcall_info_init(type, 0, &current_agt->fci, &current_agt->fci_cache, NULL, &errstr) == FAILURE) {
-            php_error_docref(NULL, E_USER_ERROR, "Error setting converter callback: %s", errstr);
-        }
-        if (errstr) {
-            efree(errstr);
-        }
+    } else {
 
-        // shared fci configuration
-        current_agt->fci.param_count = 2;
-        current_agt->fci.no_separation = 0;
+        php_error_docref(NULL, E_USER_ERROR, "Invalid aggregator function.");
+
+    }
+}
+
+static zend_always_inline void compile_aggregator(compiled_agt *agt, zval *agt_def, ulong num_alias, zend_string *alias)
+{
+    if (Z_TYPE_P(agt_def) == IS_LONG) {
+
+        compile_aggregator_constant(agt, agt_def);
+
+        agt->isa = REDUCER_TYPE_LONG;
+
+        compile_aggregator_selector_default(agt, num_alias, alias);
+
+    } else if (zend_is_callable(agt_def, IS_CALLABLE_CHECK_NO_ACCESS, NULL)) {
+
+        compile_aggregator_callable(agt, agt_def);
+
+        agt->isa = REDUCER_TYPE_LONG;
+
+        compile_aggregator_selector_default(agt, num_alias, alias);
+
+    } else if (Z_TYPE_P(agt_def) == IS_ARRAY) {
+
+          zval *fun;
+          fun = zend_hash_str_find(Z_ARRVAL_P(agt_def), "aggregator", sizeof("aggregator") - 1);
+          if (fun == NULL) {
+              php_error_docref(NULL, E_USER_ERROR, "Aggregator is not defined.");
+          }
+          ZVAL_DEREF(fun);
+
+          compile_aggregator_function(agt, fun);
+          compile_aggregator_selector(agt, agt_def, num_alias, alias);
+          compile_aggregator_isa(agt, agt_def);
+
+    } else {
+
+        php_error_docref(NULL, E_USER_ERROR, "Unsupported aggregator");
     }
 }
 
 void compile_aggregators(compiled_agt *agts, zval *aggregators)
 {
-  compiled_agt *current_agt;
+  compiled_agt *agt;
   uint agt_idx = 0;
   ulong num_alias;
   zend_string *alias;
-  zval *aggregator, *tmp;
+  zval *arg, *tmp;
 
-  ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(aggregators), num_alias, alias, aggregator) {
-      current_agt = &agts[agt_idx++];
+  ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(aggregators), num_alias, alias, arg) {
 
-      if (Z_TYPE_P(aggregator) == IS_LONG) {
-
-          compile_aggregator(current_agt, aggregator);
-
-          if (alias) {
-              current_agt->alias = alias;
-              current_agt->selector = alias;
-          } else {
-              current_agt->alias = NULL;
-              current_agt->selector = NULL;
-              current_agt->num_alias = num_alias;
-              current_agt->num_selector = num_alias;
-          }
-
-          current_agt->isa = REDUCER_TYPE_LONG;
-
-      } else if (zend_is_callable(aggregator, IS_CALLABLE_CHECK_NO_ACCESS, NULL)) {
-
-          compile_aggregator(current_agt, aggregator);
-
-          if (alias) {
-              current_agt->alias = alias;
-              current_agt->selector = alias;
-          } else {
-              current_agt->alias = NULL;
-              current_agt->selector = NULL;
-              current_agt->num_alias = num_alias;
-              current_agt->num_selector = num_alias;
-          }
-
-          current_agt->isa = REDUCER_TYPE_LONG;
-
-      } else if (Z_TYPE_P(aggregator) == IS_ARRAY) {
-
-          tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "aggregator", sizeof("aggregator") - 1);
-          if (tmp == NULL) {
-              php_error_docref(NULL, E_USER_ERROR, "Aggregator is not defined.");
-          }
-          ZVAL_DEREF(tmp);
-
-          compile_aggregator(current_agt, tmp);
-
-          if (alias) {
-              current_agt->alias = alias;
-          } else {
-              current_agt->alias = NULL;
-              current_agt->num_alias = num_alias;
-          }
-
-          tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "selector", sizeof("selector") -1);
-          if (tmp) {
-              ZVAL_DEREF(tmp);
-              if (Z_TYPE_P(tmp) == IS_STRING) { 
-                  current_agt->selector = Z_STR_P(tmp);
-              } else if (Z_TYPE_P(tmp) == IS_LONG) {
-                  current_agt->num_selector = Z_LVAL_P(tmp);
-              }
-          } else {
-            if (alias) {
-                current_agt->selector = alias;
-            } else {
-                current_agt->selector = NULL;
-                current_agt->num_selector = num_alias;
-            }
-          }
-
-          tmp = zend_hash_str_find(Z_ARRVAL_P(aggregator), "isa", sizeof("isa")-1);
-          if (tmp) {
-
-            if (Z_TYPE_P(tmp) == IS_LONG) {
-
-              current_agt->isa = Z_LVAL_P(tmp);
-
-            } else if (Z_TYPE_P(tmp) == IS_STRING) {
-
-              if (strncasecmp(Z_STRVAL_P(tmp), "int", sizeof("int")-1) == 0) {
-                current_agt->isa = REDUCER_TYPE_LONG;
-              } else if (strncasecmp(Z_STRVAL_P(tmp), "double", sizeof("double")-1) == 0) {
-                current_agt->isa = REDUCER_TYPE_DOUBLE;
-              }
-
-            } else {
-              php_error_docref(NULL, E_USER_ERROR, "Unsupported aggregator data type.");
-            }
-
-          } else {
-            current_agt->isa = REDUCER_TYPE_LONG;
-          }
-
-
-      } else {
-          php_error_docref(NULL, E_USER_ERROR, "Unsupported aggregator");
-      }
+      compile_aggregator(&agts[agt_idx++], arg, num_alias, alias);
 
   } ZEND_HASH_FOREACH_END();
 }
