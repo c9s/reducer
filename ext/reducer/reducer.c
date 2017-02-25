@@ -227,13 +227,13 @@ static zend_always_inline void compile_aggregator_isa(compiled_agt *agt, zval * 
 
 
 
-static zend_always_inline void compile_aggregator_constant(compiled_agt *agt, zval *type)
+static zend_always_inline void compile_aggregator_function_constant(compiled_agt *agt, zval *type)
 {
   agt->is_callable = 0;
   agt->type = type;
 }
 
-static zend_always_inline void compile_aggregator_callable(compiled_agt *agt, zval *type)
+static zend_always_inline void compile_aggregator_function_callable(compiled_agt *agt, zval *type)
 {
     agt->is_callable = 1;
     agt->type = type;
@@ -256,15 +256,22 @@ static zend_always_inline void compile_aggregator_callable(compiled_agt *agt, zv
 }
 
 
-static zend_always_inline void compile_aggregator_function(compiled_agt *agt, zval *type)
+static zend_always_inline void compile_aggregator_function(compiled_agt *agt, zval *agt_def)
 {
-    if (Z_TYPE_P(type) == IS_LONG) {
+    zval *fun;
+    fun = zend_hash_str_find(Z_ARRVAL_P(agt_def), "aggregator", sizeof("aggregator") - 1);
+    if (fun == NULL) {
+        php_error_docref(NULL, E_USER_ERROR, "Aggregator is not defined.");
+    }
+    ZVAL_DEREF(fun);
 
-        compile_aggregator_constant(agt, type);
+    if (Z_TYPE_P(fun) == IS_LONG) {
 
-    } else if (zend_is_callable(type, IS_CALLABLE_CHECK_NO_ACCESS, NULL)) {
+        compile_aggregator_function_constant(agt, fun);
 
-        compile_aggregator_callable(agt, type);
+    } else if (zend_is_callable(fun, IS_CALLABLE_CHECK_NO_ACCESS, NULL)) {
+
+        compile_aggregator_function_callable(agt, fun);
 
     } else {
 
@@ -277,7 +284,7 @@ static zend_always_inline void compile_aggregator(compiled_agt *agt, zval *agt_d
 {
     if (Z_TYPE_P(agt_def) == IS_LONG) {
 
-        compile_aggregator_constant(agt, agt_def);
+        compile_aggregator_function_constant(agt, agt_def);
 
         agt->isa = REDUCER_TYPE_LONG;
 
@@ -285,7 +292,7 @@ static zend_always_inline void compile_aggregator(compiled_agt *agt, zval *agt_d
 
     } else if (zend_is_callable(agt_def, IS_CALLABLE_CHECK_NO_ACCESS, NULL)) {
 
-        compile_aggregator_callable(agt, agt_def);
+        compile_aggregator_function_callable(agt, agt_def);
 
         agt->isa = REDUCER_TYPE_LONG;
 
@@ -293,14 +300,8 @@ static zend_always_inline void compile_aggregator(compiled_agt *agt, zval *agt_d
 
     } else if (Z_TYPE_P(agt_def) == IS_ARRAY) {
 
-          zval *fun;
-          fun = zend_hash_str_find(Z_ARRVAL_P(agt_def), "aggregator", sizeof("aggregator") - 1);
-          if (fun == NULL) {
-              php_error_docref(NULL, E_USER_ERROR, "Aggregator is not defined.");
-          }
-          ZVAL_DEREF(fun);
 
-          compile_aggregator_function(agt, fun);
+          compile_aggregator_function(agt, agt_def);
           compile_aggregator_selector(agt, agt_def, num_alias, alias);
           compile_aggregator_isa(agt, agt_def);
 
